@@ -1,55 +1,51 @@
 package com.smartcar.backend.models;
 
-public class carro {
+public class Carro {
 
     private String estado;
     private float velocidad;
     private String direccion;
 
-    public void Carro() {
+    public Carro() {
     }
 
-    public void Carro(String estado, float velocidad, String direccion) {
+    public Carro(String estado, float velocidad, String direccion) {
         this.estado = estado;
         this.velocidad = velocidad;
         this.direccion = direccion;
     }
 
     public void avanzar() {
-
     }
 
     public void detener() {
-
     }
 
-    public void cambiarDireccion() {
-
+    public void cambiarDireccion(String nuevaDireccion) {
+        this.direccion = nuevaDireccion;
     }
 
     public String getEstado() {
         return estado;
     }
 
-    public String setEstado() {
-        return this.estado = estado;
-
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 
     public float getVelocidad() {
         return velocidad;
     }
 
-    public float setVelocidad() {
-        return this.velocidad = velocidad;
+    public void setVelocidad(float velocidad) {
+        this.velocidad = velocidad;
     }
 
     public String getDireccion() {
         return direccion;
     }
 
-    public String setDireccion() {
-        return this.direccion = direccion;
-
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
     }
 }
