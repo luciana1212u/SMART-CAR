@@ -1,13 +1,19 @@
 package com.smartcar.backend.models;
 
-public class sensor_luz {
+public class SensorLuz extends Sensor {
 
     private float nivelLuz;
 
-    public sensor_luz() {
+    public SensorLuz() {
+        super();
     }
 
-    public sensor_luz(float nivelLuz) {
+    public SensorLuz(
+            int idSensor,
+            boolean estado,
+            float nivelLuz
+    ) {
+        super(idSensor, estado);
         this.nivelLuz = nivelLuz;
     }
 
@@ -16,11 +22,12 @@ public class sensor_luz {
     }
 
     public boolean hayOscuridad() {
-        return this.nivelLuz < 30;
+        return this.nivelLuz < 20.0f;
     }
 
-    public void calibrar(float nuevoNivelLuz) {
-        this.nivelLuz = nuevoNivelLuz;
+    @Override
+    public float leerDatos() {
+        return this.nivelLuz;
     }
 
     public float getNivelLuz() {
