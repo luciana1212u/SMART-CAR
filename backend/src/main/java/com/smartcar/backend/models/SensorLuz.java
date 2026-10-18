@@ -1,6 +1,6 @@
 package com.smartcar.backend.models;
 
-public class SensorLuz extends Sensor {
+public class SensorLuz extends sensor {
 
     private float nivelLuz;
 

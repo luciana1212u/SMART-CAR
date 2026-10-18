@@ -1,6 +1,6 @@
 package com.smartcar.backend.models;
 
-public class SensorAprox extends Sensor {
+public class SensorAprox extends sensor {
 
     private boolean objetoDetectado;
     private float rangoDeteccion;

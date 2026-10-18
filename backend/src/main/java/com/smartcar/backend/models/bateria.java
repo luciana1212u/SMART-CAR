@@ -1,14 +1,14 @@
 package com.smartcar.backend.models;
 
-public class Bateria {
+public class bateria {
 
     private int nivel;
     private float voltaje;
 
-    public Bateria() {
+    public bateria() {
     }
 
-    public Bateria(int nivel, float voltaje) {
+    public bateria(int nivel, float voltaje) {
         this.nivel = nivel;
         this.voltaje = voltaje;
     }

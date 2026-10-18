@@ -1,14 +1,14 @@
 package com.smartcar.backend.models;
 
-public class Sensor {
+public class sensor {
 
     private int idSensor;
     private boolean estado;
 
-    public Sensor() {
+    public sensor() {
     }
 
-    public Sensor(int idSensor, boolean estado) {
+    public sensor(int idSensor, boolean estado) {
         this.idSensor = idSensor;
         this.estado = estado;
     }

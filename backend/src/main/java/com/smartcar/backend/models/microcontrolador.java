@@ -1,6 +1,6 @@
 package com.smartcar.backend.models;
 
-public class Microcontrolador {
+public class microcontrolador {
 
 	private String estado;
 	private float velocidadActual;
