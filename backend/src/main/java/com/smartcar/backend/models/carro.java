@@ -11,33 +11,50 @@ public class carro {
     private String modoOperacion;
 
     public carro() {
-        this.estado = "QUIETO";
-        this.velocidad = 0f;
-        this.direccion = "NINGUNA";
+        this.estado = "Detenido";
+        this.velocidad = 0;
+        this.direccion = "Recto";
+        this.modoOperacion = "REMOTO";
+    }
+
+    public carro(String estado, float velocidad, String direccion) {
+        setEstado(estado);
+        setVelocidad(velocidad);
+        setDireccion(direccion);
         this.modoOperacion = "REMOTO";
     }
 
     public carro(String estado, float velocidad, String direccion, String modoOperacion) {
-        this.estado = estado;
-        this.velocidad = velocidad;
-        this.direccion = direccion;
+        setEstado(estado);
+        setVelocidad(velocidad);
+        setDireccion(direccion);
         this.modoOperacion = modoOperacion;
     }
 
-    public void cambiarEstado(String estado) {
-        this.estado = estado;
+    public void avanzar() {
+        this.estado = "En movimiento";
     }
 
-    public void cambiarDireccion(String direccion) {
-        this.direccion = direccion;
+    public void detener() {
+        this.velocidad = 0;
+        this.estado = "Detenido";
+    }
+
+    public void cambiarEstado(String estado) {
+        setEstado(estado);
+    }
+
+    public void cambiarDireccion(String nuevaDireccion) {
+        setDireccion(nuevaDireccion);
     }
 
     public boolean estaQuieto() {
-        return "QUIETO".equals(this.estado);
+        return "QUIETO".equalsIgnoreCase(this.estado)
+                || "Detenido".equalsIgnoreCase(this.estado);
     }
 
     public boolean estaRetrocediendo() {
-        return "RETROCEDIENDO".equals(this.estado);
+        return "RETROCEDIENDO".equalsIgnoreCase(this.estado);
     }
 
     public String getEstado() {
@@ -45,6 +62,10 @@ public class carro {
     }
 
     public void setEstado(String estado) {
+        if (estado == null || estado.trim().isEmpty()) {
+            throw new IllegalArgumentException("El estado no puede estar vacIo");
+        }
+
         this.estado = estado;
     }
 
@@ -53,6 +74,11 @@ public class carro {
     }
 
     public void setVelocidad(float velocidad) {
+
+        if (velocidad < 0 || Float.isNaN(velocidad) || Float.isInfinite(velocidad)) {
+
+            throw new IllegalArgumentException("La velocidad no puede ser negativa");
+        }
         this.velocidad = velocidad;
     }
 
@@ -61,6 +87,9 @@ public class carro {
     }
 
     public void setDireccion(String direccion) {
+        if (direccion == null || direccion.trim().isEmpty()) {
+            throw new IllegalArgumentException("La direccion no puede estar vacia");
+        }
         this.direccion = direccion;
     }
 
