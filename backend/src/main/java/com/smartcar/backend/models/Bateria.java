@@ -1,36 +1,19 @@
 package com.smartcar.backend.models;
 
-public class bateria {
+public class Bateria {
 
     private int nivel;
     private float voltaje;
 
-    public bateria() {
-    }
-
-    public bateria(int nivel, float voltaje) {
+    public Bateria(int nivel, float voltaje) {
         this.nivel = nivel;
         this.voltaje = voltaje;
     }
 
-    public int ObtenerNivel() {
-        return this.nivel;
-    }
+    public int obtenerNivel() { return nivel; }
 
-    public boolean estaBaja() {
-        return this.nivel <= 20;
-    }
-
-    public void recargar() {
-        this.nivel = 100;
-    }
-
-    public int getNivel() {
-        return nivel;
-    }
-
-    public void setNivel(int nivel) {
-        this.nivel = nivel;
+    public void actualizarNivel(int nivel) {
+        this.nivel = Math.max(0, Math.min(100, nivel));
     }
 
     public float getVoltaje() {

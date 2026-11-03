@@ -1,29 +1,37 @@
 package com.smartcar.backend.services;
 
-import org.springframework.stereotype.Service;
+import java.util.Random;
 
-@Service
 public class EvasionService {
     private final MotorService motorService;
     private final SensorService sensorService;
-    private String ladoActual;          // se mantiene hasta que el obstaculo desaparece
-    private boolean ultimoIzquierda;
+    private int tiempoMaxGiroMs = 1500;
+    private final Random random = new Random();
 
-    public EvasionService(MotorService motorService, SensorService sensorService) { 
+    public EvasionService(MotorService motorService, SensorService sensorService) {
         this.motorService = motorService;
         this.sensorService = sensorService;
     }
 
+    // Detiene, elige un lado y gira para esquivar el obstaculo
     public void evadir() {
-        if (ladoActual == null) ladoActual = elegirLado();
-        if ("IZQUIERDA".equals(ladoActual)) motorService.girarIzquierda();
-        else motorService.girarDerecha();
+        motorService.detenerMotores();
+        if ("IZQUIERDA".equals(elegirLado())) {
+            motorService.girarIzquierda();
+        } else {
+            motorService.girarDerecha();
+        }
     }
 
-    public void liberar() { ladoActual = null; }
-
     public String elegirLado() {
-        ultimoIzquierda = !ultimoIzquierda;
-        return ultimoIzquierda ? "IZQUIERDA" : "DERECHA";
+        return random.nextBoolean() ? "IZQUIERDA" : "DERECHA";
+    }
+
+    public int getTiempoMaxGiroMs() {
+        return tiempoMaxGiroMs;
+    }
+
+    public void setTiempoMaxGiroMs(int tiempoMaxGiroMs) {
+        this.tiempoMaxGiroMs = tiempoMaxGiroMs;
     }
 }

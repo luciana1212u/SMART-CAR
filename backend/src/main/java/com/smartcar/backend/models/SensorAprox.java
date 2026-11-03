@@ -1,63 +1,33 @@
 package com.smartcar.backend.models;
 
-public class SensorAprox extends sensor {
-
-    private boolean objetoDetectado;
+public class SensorAprox extends Sensor {
     private float rangoDeteccion;
-    private int distancia;
+    private float distancia;
 
-    public SensorAprox() {
-        super();
-    }
-
-    public SensorAprox(
-            int idSensor,
-            boolean estado,
-            boolean objetoDetectado,
-            float rangoDeteccion,
-            int distancia
-    ) {
-        super(idSensor, estado);
-        this.objetoDetectado = objetoDetectado;
+    public SensorAprox(int idSensor, float rangoDeteccion) {
+        super(idSensor);
         this.rangoDeteccion = rangoDeteccion;
-        this.distancia = distancia;
-    }
-
-    public boolean detectar() {
-        this.objetoDetectado = this.distancia <= this.rangoDeteccion;
-        return this.objetoDetectado;
-    }
-
-    public boolean hayObstaculo() {
-        return this.objetoDetectado;
-    }
-
-    @Override
-    public float leerDatos() {
-        return this.distancia;
-    }
-
-    public boolean isObjetoDetectado() {
-        return objetoDetectado;
-    }
-
-    public void setObjetoDetectado(boolean objetoDetectado) {
-        this.objetoDetectado = objetoDetectado;
+        this.distancia = rangoDeteccion;
     }
 
     public float getRangoDeteccion() {
         return rangoDeteccion;
     }
 
-    public void setRangoDeteccion(float rangoDeteccion) {
-        this.rangoDeteccion = rangoDeteccion;
-    }
-
-    public int getDistancia() {
+    public float getDistancia() {
         return distancia;
     }
 
-    public void setDistancia(int distancia) {
+    public void setDistancia(float distancia) {
         this.distancia = distancia;
+    }
+
+    public float medirDistancia() {
+        return distancia;
+    }
+
+    @Override
+    public float leerDatos() {
+        return medirDistancia();
     }
 }
