@@ -8,8 +8,8 @@ public class Leds {
         this.estado = false;
     }
 
-    public Leds(boolean estado) {
-        this.estado = estado;
+    public boolean isEstado() {
+        return estado;
     }
 
     public void encender() {
@@ -18,13 +18,5 @@ public class Leds {
 
     public void apagar() {
         this.estado = false;
-    }
-
-    public boolean isEstado() {
-        return estado;
-    }
-
-    public void setEstado(boolean estado) {
-        this.estado = estado;
     }
 }

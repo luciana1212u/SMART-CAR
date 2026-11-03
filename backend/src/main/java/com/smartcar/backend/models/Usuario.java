@@ -1,27 +1,41 @@
 package com.smartcar.backend.models;
 
 public class Usuario {
-
-    private Aplicacion aplicacion;
     private int id;
     private String nombre;
+    private String usuario;
+    private String passwordHash;
+    private String salt;
 
-    public Usuario() {
-    }
+    // Agregacion: el usuario puede tener instalada una aplicacion
+    private Aplicacion aplicacion;
 
-    public Usuario(Aplicacion aplicacion, int id, String nombre) {
-        this.aplicacion = aplicacion;
+    public Usuario(int id, String nombre, String usuario, String passwordHash, String salt) {
         this.id = id;
         this.nombre = nombre;
+        this.usuario = usuario;
+        this.passwordHash = passwordHash;
+        this.salt = salt;
     }
 
-    public void controlarCarrito() {
-        aplicacion.enviarComando("avanzar");    
-        // Lógica para controlar el carrito ejemplo: avanzar, retroceder, girar, etc.
+    public int getId() {
+        return id;
     }
 
-    public void consultarEstado() {
-        aplicacion.mostrarEstado();        
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getUsuario() {
+        return usuario;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public String getSalt() {
+        return salt;
     }
 
     public Aplicacion getAplicacion() {
@@ -32,20 +46,13 @@ public class Usuario {
         this.aplicacion = aplicacion;
     }
 
-    public int getId() {
-        return id;
+    public void controlarCarrito(String comando) {
+        if (aplicacion != null) {
+            aplicacion.enviarComando(comando);
+        }
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public String consultarEstado() {
+        return aplicacion != null ? aplicacion.mostrarEstado() : "SIN_APLICACION";
     }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
 }

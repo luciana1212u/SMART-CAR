@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartCar · Prueba Bluetooth</title>
+<style>
+:root{--bg:#eef2f1;--panel:#fff;--ink:#16302b;--mute:#5d726d;--line:#cfdad7;--acc:#0b7a6b;--accink:#fff;--warn:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1b19;--panel:#172825;--ink:#e3efec;--mute:#93aba5;--line:#2a403c;--acc:#3fc2ad;--accink:#06201b;--warn:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif;padding:20px}
+main{max-width:520px;margin:0 auto}
+h1{font-size:1.4rem;margin:0 0 4px}
+p.sub{margin:0 0 16px;color:var(--mute)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+#estado{display:flex;align-items:center;gap:10px;font-weight:600}
+#punto{width:12px;height:12px;border-radius:50%;background:var(--warn)}
+#punto.on{background:var(--acc)}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:10px 14px;cursor:pointer}
+button.p{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.cruz{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.cruz button:nth-child(1){grid-column:2}
+.cruz button:nth-child(2){grid-column:1;grid-row:2}
+.cruz button:nth-child(3){grid-column:2;grid-row:2}
+.cruz button:nth-child(4){grid-column:3;grid-row:2}
+.cruz button:nth-child(5){grid-column:2;grid-row:3}
+h2{font-size:1rem;margin:0}
+#log{font:13px/1.5 Consolas,monospace;height:180px;overflow:auto;background:var(--bg);border-radius:8px;padding:10px;margin-top:10px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main>
+  <h1>Prueba Bluetooth del carro</h1>
+  <p class="sub">Conecta la ESP32-S3 y envía comandos. Usa Chrome o Edge.</p>
+
+  <section>
+    <div id="estado"><span id="punto"></span><span id="txt">Sin conexión</span></div>
+    <div class="fila">
+      <button id="conectar" class="p">Conectar con la ESP32</button>
+      <button id="desconectar" disabled>Desconectar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>LED de la placa</h2>
+    <div class="fila">
+      <button data-cmd="ON" disabled>Encender</button>
+      <button data-cmd="OFF" disabled>Apagar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Movimiento (simulado)</h2>
+    <div class="cruz">
+      <button data-cmd="AVANZAR" disabled>Avanzar</button>
+      <button data-cmd="IZQUIERDA" disabled>Izquierda</button>
+      <button data-cmd="DETENER" disabled>Detener</button>
+      <button data-cmd="DERECHA" disabled>Derecha</button>
+      <button data-cmd="RETROCEDER" disabled>Retroceder</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Registro</h2>
+    <div id="log" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+const SERVICE = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const RX_CHAR = "beb5483e-36e1-4688-b7f5-ea07361b26a8"; // navegador -> ESP32 (escritura)
+const TX_CHAR = "6e400003-b5a3-f393-cfa9-e50e24dcca9e"; // ESP32 -> navegador (notificación)
+
+let dispositivo, rx, tx;
+const $ = s => document.querySelector(s);
+const botonesCmd = document.querySelectorAll("[data-cmd]");
+
+function log(m){ const h = new Date().toLocaleTimeString(); $("#log").textContent += `[${h}] ${m}\n`; $("#log").scrollTop = 1e9; }
+function estado(on, t){ $("#punto").classList.toggle("on", on); $("#txt").textContent = t;
+  botonesCmd.forEach(b => b.disabled = !on); $("#desconectar").disabled = !on; $("#conectar").disabled = on; }
+
+async function conectar(){
+  if(!navigator.bluetooth){ log("Este navegador no soporta Web Bluetooth. Usa Chrome o Edge."); return; }
+  try{
+    log("Buscando dispositivos SmartCar...");
+    dispositivo = await navigator.bluetooth.requestDevice({
+      filters:[{namePrefix:"SmartCar"}], optionalServices:[SERVICE]
+    });
+    dispositivo.addEventListener("gattserverdisconnected", () => { estado(false,"Sin conexión"); log("Desconectado."); });
+    const server = await dispositivo.gatt.connect();
+    const svc = await server.getPrimaryService(SERVICE);
+    rx = await svc.getCharacteristic(RX_CHAR);
+    tx = await svc.getCharacteristic(TX_CHAR);
+    await tx.startNotifications();
+    tx.addEventListener("characteristicvaluechanged", e => log("ESP32: " + new TextDecoder().decode(e.target.value)));
+    estado(true, "Conectado a " + dispositivo.name);
+    log("Conectado.");
+  }catch(err){ log("No se pudo conectar: " + err.message); estado(false,"Sin conexión"); }
+}
+
+async function enviar(cmd){
+  try{ await rx.writeValue(new TextEncoder().encode(cmd)); log("Enviado: " + cmd); }
+  catch(err){ log("Error al enviar: " + err.message); }
+}
+
+$("#conectar").onclick = conectar;
+$("#desconectar").onclick = () => dispositivo?.gatt.disconnect();
+botonesCmd.forEach(b => b.onclick = () => enviar(b.dataset.cmd));
+</script>
+</body>
+</html>

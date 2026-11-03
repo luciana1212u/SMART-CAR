@@ -1,59 +1,33 @@
 package com.smartcar.backend.services;
 
-import org.springframework.stereotype.Service;
-
 import com.smartcar.backend.models.SensorAprox;
 import com.smartcar.backend.models.SensorLuz;
 
-@Service
 public class SensorService {
+    private final SensorAprox sensorAproximidad;
+    private final SensorLuz sensorLuz;
+    private float umbralDistancia = 20f;
+    private float umbralOscuridad = 30f;
 
-    private SensorAprox sensorAproximidad;
-    private SensorLuz sensorLuz;
-    private float umbralDistancia;   // cm: más cerca que esto = obstáculo
-    private float umbralOscuridad;   // nivel de luz: menos que esto = oscuro
-
-    // Constructor que usa Spring: crea los sensores con valores por defecto
-    public SensorService() {
-        this(
-            new SensorAprox(1, true, false, 30f, 100),
-            new SensorLuz(2, true, 100f),
-            20f,
-            20f
-        );
-    }
-
-    // Constructor para pruebas o para configurar otros sensores/umbrales
-    public SensorService(SensorAprox sensorAproximidad, SensorLuz sensorLuz,
-                         float umbralDistancia, float umbralOscuridad) {
+    public SensorService(SensorAprox sensorAproximidad, SensorLuz sensorLuz) {
         this.sensorAproximidad = sensorAproximidad;
         this.sensorLuz = sensorLuz;
-        this.umbralDistancia = umbralDistancia;
-        this.umbralOscuridad = umbralOscuridad;
     }
 
-    // Regla: hay obstáculo si el sensor está activo y el objeto está más cerca que el umbral
+    // Un sensor desactivado no reporta obstaculo
     public boolean hayObstaculo() {
-        if (!sensorAproximidad.isEstado()) {
+        if (!sensorAproximidad.estaActivo()) {
             return false;
         }
-        return sensorAproximidad.getDistancia() < umbralDistancia;
+        return sensorAproximidad.medirDistancia() < umbralDistancia;
     }
 
-    // Regla: está oscuro si el sensor está activo y el nivel de luz es menor que el umbral
+    // Un sensor desactivado no reporta oscuridad
     public boolean hayOscuridad() {
-        if (!sensorLuz.isEstado()) {
+        if (!sensorLuz.estaActivo()) {
             return false;
         }
-        return sensorLuz.medirLuz() < umbralOscuridad;
-    }
-
-    public SensorAprox getSensorAproximidad() {
-        return sensorAproximidad;
-    }
-
-    public SensorLuz getSensorLuz() {
-        return sensorLuz;
+        return sensorLuz.medirIntensidad() < umbralOscuridad;
     }
 
     public float getUmbralDistancia() {

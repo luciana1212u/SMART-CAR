@@ -1,55 +1,41 @@
 package com.smartcar.backend.models;
 
 public class Aplicacion {
-
     private boolean estadoConexion;
     private String comandoActual;
+    private Microcontrolador microcontrolador;
 
-    // Constructor vacío
-    public Aplicacion() {
+    public Aplicacion(Microcontrolador microcontrolador) {
+        this.microcontrolador = microcontrolador;
+        this.estadoConexion = false;
+        this.comandoActual = "";
     }
 
-    // Constructor con parámetros
-    public Aplicacion(boolean estadoConexion, String comandoActual) {
-        this.estadoConexion = estadoConexion;
-        this.comandoActual = comandoActual;
-    }
-
-    // Métodos
-    public void conectar() {
-        this.estadoConexion = true;
-    }
-
-    public void enviarComando(String comando) {
-        this.comandoActual = comando;
-    }
-
-    public void mostrarEstado() {
-        // Lógica para mostrar el estado en la interfaz
-    }
-
-    public void mostrarDistanciaObjeto() {
-        // Lógica para mostrar la distancia del sensor
-    }
-
-    public void tocarBocina() {
-        // Lógica para enviar señal de bocina
-    }
-
-    // Getters y Setters
     public boolean isEstadoConexion() {
         return estadoConexion;
-    }
-
-    public void setEstadoConexion(boolean estadoConexion) {
-        this.estadoConexion = estadoConexion;
     }
 
     public String getComandoActual() {
         return comandoActual;
     }
 
-    public void setComandoActual(String comandoActual) {
-        this.comandoActual = comandoActual;
+    public void conectar() {
+        this.estadoConexion = true;
+    }
+
+    public void enviarComando(String comando) {
+        if (!estadoConexion) {
+            return;
+        }
+        this.comandoActual = comando;
+        microcontrolador.recibirComando(comando);
+    }
+
+    public String mostrarEstado() {
+        return microcontrolador.getEstado();
+    }
+
+    public float mostrarDistanciaObjeto(SensorAprox sensor) {
+        return sensor.medirDistancia();
     }
 }

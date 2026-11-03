@@ -1,5 +1,5 @@
 package com.smartcar.backend.models;
-
+ 
 public interface ISensor {
     float leerDatos();
     boolean estaActivo();
