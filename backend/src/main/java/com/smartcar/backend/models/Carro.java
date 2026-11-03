@@ -1,72 +1,49 @@
 package com.smartcar.backend.models;
 
-import org.springframework.stereotype.Component;
+import java.util.ArrayList;
+import java.util.List;
 
-@Component
-public class carro {
+public class Carro {
 
-    private String estado;
+    private String estado = "QUIETO"; // QUIETO, AVANZANDO, RETROCEDIENDO, GIRANDO
     private float velocidad;
-    private String direccion;
-    private String modoOperacion;
+    private String direccion = "RECTO";
+    private String modoOperacion = "AUTONOMO"; // AUTONOMO, MANUAL
 
-    public carro() {
-        this.estado = "Detenido";
-        this.velocidad = 0;
-        this.direccion = "Recto";
-        this.modoOperacion = "REMOTO";
-    }
+    // Composicion: el carro es el "todo", las partes no existen sin el
+    private Microcontrolador microcontrolador;
+    private final List<Motor> motores = new ArrayList<>();
+    private Bateria bateria;
+    private final List<Leds> leds = new ArrayList<>();
+    private final List<Sensor> sensores = new ArrayList<>();
 
-    public carro(String estado, float velocidad, String direccion) {
-        setEstado(estado);
-        setVelocidad(velocidad);
-        setDireccion(direccion);
-        this.modoOperacion = "REMOTO";
-    }
-
-    public carro(String estado, float velocidad, String direccion, String modoOperacion) {
-        setEstado(estado);
-        setVelocidad(velocidad);
-        setDireccion(direccion);
-        this.modoOperacion = modoOperacion;
-    }
-
-    public void avanzar() {
-        this.estado = "En movimiento";
-    }
-
-    public void detener() {
-        this.velocidad = 0;
-        this.estado = "Detenido";
+    public Carro() {
+        this.estado = "QUIETO";
+        this.velocidad = 0f;
+        this.direccion = "ADELANTE";
+        this.modoOperacion = "MANUAL";
+        this.microcontrolador = new Microcontrolador();
+        this.bateria = new Bateria(100, 12f);
     }
 
     public void cambiarEstado(String estado) {
-        setEstado(estado);
+        this.estado = estado;
     }
 
-    public void cambiarDireccion(String nuevaDireccion) {
-        setDireccion(nuevaDireccion);
+    public void cambiarDireccion(String direccion) {
+        this.direccion = direccion;
     }
 
     public boolean estaQuieto() {
-        return "QUIETO".equalsIgnoreCase(this.estado)
-                || "Detenido".equalsIgnoreCase(this.estado);
+        return "QUIETO".equals(estado);
     }
 
     public boolean estaRetrocediendo() {
-        return "RETROCEDIENDO".equalsIgnoreCase(this.estado);
+        return "RETROCEDIENDO".equals(estado);
     }
 
     public String getEstado() {
         return estado;
-    }
-
-    public void setEstado(String estado) {
-        if (estado == null || estado.trim().isEmpty()) {
-            throw new IllegalArgumentException("El estado no puede estar vacIo");
-        }
-
-        this.estado = estado;
     }
 
     public float getVelocidad() {
@@ -74,23 +51,11 @@ public class carro {
     }
 
     public void setVelocidad(float velocidad) {
-
-        if (velocidad < 0 || Float.isNaN(velocidad) || Float.isInfinite(velocidad)) {
-
-            throw new IllegalArgumentException("La velocidad no puede ser negativa");
-        }
         this.velocidad = velocidad;
     }
 
     public String getDireccion() {
         return direccion;
-    }
-
-    public void setDireccion(String direccion) {
-        if (direccion == null || direccion.trim().isEmpty()) {
-            throw new IllegalArgumentException("La direccion no puede estar vacia");
-        }
-        this.direccion = direccion;
     }
 
     public String getModoOperacion() {
@@ -100,4 +65,25 @@ public class carro {
     public void setModoOperacion(String modoOperacion) {
         this.modoOperacion = modoOperacion;
     }
+
+    public Microcontrolador getMicrocontrolador() {
+        return microcontrolador;
+    }
+
+    public Bateria getBateria() {
+        return bateria;
+    }
+
+    public List<Motor> getMotores() {
+        return motores;
+    }
+
+    public List<Leds> getLeds() {
+        return leds;
+    }
+
+    public List<Sensor> getSensores() {
+        return sensores;
+    }
+
 }

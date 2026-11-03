@@ -1,51 +1,53 @@
+
 package com.smartcar.backend.services;
 
-import org.springframework.stereotype.Service;
-
 import com.smartcar.backend.models.Motor;
+import org.springframework.stereotype.Service;
 
 @Service
 public class MotorService {
 
-    private Motor motorI;   // motor izquierdo
-    private Motor motorD;   // motor derecho
+    private final Motor motorI;
+    private final Motor motorD;
+    private String estado = "DETENER";
 
-    // Constructor que usa Spring: crea los dos motores detenidos
     public MotorService() {
-        this(new Motor(false, "Detenido"), new Motor(false, "Detenido"));
-    }
-
-    // Constructor para pruebas
-    public MotorService(Motor motorI, Motor motorD) {
-        this.motorI = motorI;
-        this.motorD = motorD;
+        this.motorI = new Motor(1);
+        this.motorD = new Motor(2);
     }
 
     public void avanzar() {
         motorI.girarAdelante();
         motorD.girarAdelante();
+        estado = "AVANZAR";
     }
 
     public void retroceder() {
         motorI.girarAtras();
         motorD.girarAtras();
+        estado = "RETROCEDER";
     }
 
-    // Tracción diferencial: para girar, cada rueda gira en sentido contrario
     public void girarIzquierda() {
         motorI.girarAtras();
         motorD.girarAdelante();
+        estado = "IZQUIERDA";
     }
 
     public void girarDerecha() {
         motorI.girarAdelante();
         motorD.girarAtras();
+        estado = "DERECHA";
     }
 
-    // Lo usan detenerCarro() y la regla de batería baja (R12)
     public void detenerMotores() {
         motorI.detener();
         motorD.detener();
+        estado = "DETENER";
+    }
+
+    public String getEstado() {
+        return estado;
     }
 
     public Motor getMotorI() {

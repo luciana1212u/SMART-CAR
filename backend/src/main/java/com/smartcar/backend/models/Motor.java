@@ -5,17 +5,16 @@ public class Motor {
     private boolean estaEncendido;
     private String sentidoGiro;
 
-    // Constructor vacío
     public Motor() {
+        this.estaEncendido = false;
+        this.sentidoGiro = "Detenido";
     }
 
-    // Constructor con parámetros
     public Motor(boolean estaEncendido, String sentidoGiro) {
         this.estaEncendido = estaEncendido;
         this.sentidoGiro = sentidoGiro;
     }
 
-    // Comportamientos
     public void girarAdelante() {
         this.estaEncendido = true;
         this.sentidoGiro = "Adelante";
@@ -31,13 +30,15 @@ public class Motor {
         this.sentidoGiro = "Detenido";
     }
 
-    // Getters y Setters
-    public boolean isEstaEncendido() {
+    public boolean getEstaEncendido() {
         return estaEncendido;
     }
 
     public void setEstaEncendido(boolean estaEncendido) {
         this.estaEncendido = estaEncendido;
+        if (!estaEncendido) {
+            this.sentidoGiro = "Detenido";
+        }
     }
 
     public String getSentidoGiro() {

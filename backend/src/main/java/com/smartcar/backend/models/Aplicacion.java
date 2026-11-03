@@ -5,39 +5,44 @@ public class Aplicacion {
     private boolean estadoConexion;
     private String comandoActual;
 
-    // Constructor vacío
     public Aplicacion() {
     }
 
-    // Constructor con parámetros
     public Aplicacion(boolean estadoConexion, String comandoActual) {
         this.estadoConexion = estadoConexion;
         this.comandoActual = comandoActual;
     }
 
-    // Métodos
     public void conectar() {
         this.estadoConexion = true;
     }
 
     public void enviarComando(String comando) {
-        this.comandoActual = comando;
+        if(estadoConexion) {
+            this.comandoActual = comando;
+            System.out.println("Comando enviado: " + comando);
+        } else {
+            System.out.println("No se puede enviar comando. La aplicación no está conectada.");
+        }
     }
 
     public void mostrarEstado() {
-        // Lógica para mostrar el estado en la interfaz
+        if(estadoConexion) {
+            System.out.println("Aplicación conectada.");
+        } else {
+            System.out.println("Aplicación no conectada.");
+        }
     }
 
     public void mostrarDistanciaObjeto() {
-        // Lógica para mostrar la distancia del sensor
+        //aqui se mostrara la distancia recibida desde el controlador
     }
 
     public void tocarBocina() {
-        // Lógica para enviar señal de bocina
+        enviarComando("Tocar Bocina");
     }
 
-    // Getters y Setters
-    public boolean isEstadoConexion() {
+    public boolean getEstadoConexion() {
         return estadoConexion;
     }
 
