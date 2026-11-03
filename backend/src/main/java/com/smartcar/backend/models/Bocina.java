@@ -9,6 +9,7 @@ public class Bocina {
     private String patron;
     private int intervaloMs;
     private long ultimoCambioMs;
+
     public Bocina() {
         this.estaSonando = false;
         this.patron = APAGADA;

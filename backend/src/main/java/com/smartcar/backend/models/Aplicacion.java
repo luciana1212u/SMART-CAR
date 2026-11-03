@@ -1,18 +1,14 @@
 package com.smartcar.backend.models;
 
 public class Aplicacion {
-
     private boolean estadoConexion;
     private String comandoActual;
     private Microcontrolador microcontrolador;
 
-    public Aplicacion() {
-    }
-
-    public Aplicacion(boolean estadoConexion, String comandoActual, Microcontrolador microcontrolador) {
+    public Aplicacion(Microcontrolador microcontrolador) {
         this.microcontrolador = microcontrolador;
-        this.estadoConexion = estadoConexion;
-        this.comandoActual = comandoActual;
+        this.estadoConexion = false;
+        this.comandoActual = "";
     }
 
     public boolean isEstadoConexion() {

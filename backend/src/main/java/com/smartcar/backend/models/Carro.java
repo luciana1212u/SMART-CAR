@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Carro {
-
-    private String estado = "QUIETO"; // QUIETO, AVANZANDO, RETROCEDIENDO, GIRANDO
+    private String estado;
     private float velocidad;
-    private String direccion = "RECTO";
-    private String modoOperacion = "AUTONOMO"; // AUTONOMO, MANUAL
+    private String direccion;
+    private String modoOperacion;
 
     // Composicion: el carro es el "todo", las partes no existen sin el
     private Microcontrolador microcontrolador;
@@ -85,5 +84,4 @@ public class Carro {
     public List<Sensor> getSensores() {
         return sensores;
     }
-
 }
