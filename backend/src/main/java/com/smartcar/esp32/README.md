@@ -1,8 +1,5 @@
 # Cableado y firmware SmartCar
 
-Usar `SmartCar.ino` de esta carpeta y volver a cargarlo en la placa despues de
-actualizar el backend y el frontend. El programa anterior permanece en la ESP32
-hasta cargar el nuevo; cambiar Java o JavaScript no lo reemplaza.
 
 | Componente | GPIO |
 | --- | --- |
