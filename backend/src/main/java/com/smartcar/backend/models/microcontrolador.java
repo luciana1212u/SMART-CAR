@@ -1,76 +1,53 @@
 package com.smartcar.backend.models;
 
-public class Microcontrolador {
-    private String estado;
-    private float velocidadActual;
-    private String modoOperacion;
-    private String comandoActual;
+public class microcontrolador {
 
-    public Microcontrolador() {
-        this.estado = "QUIETO";
-        this.velocidadActual = 0f;
-        this.modoOperacion = "MANUAL";
-        this.comandoActual = "DETENER";
-    }
+	private String estado;
+	private float velocidadActual;
+	private String modoOperacion;
 
-    public String getEstado() {
-        return estado;
-    }
+	public void procesarDatos() {
+	}
 
-    public float getVelocidadActual() {
-        return velocidadActual;
-    }
+	public void ejecutarComando() {
+	}
 
-    public String getModoOperacion() {
-        return modoOperacion;
-    }
+	public void detenerCarro() {
+	}
 
-    public void setModoOperacion(String modoOperacion) {
-        this.modoOperacion = modoOperacion;
-    }
+	public void recibirComando(String comando) {
+	}
 
-    public void procesarDatos() {
-        // Punto de extension: aqui se procesan los datos leidos de los sensores
-    }
+	public void controlarIluminacion() {
+	}
 
-    public void ejecutarComando() {
-        switch (comandoActual) {
-            case "AVANZAR":
-                this.estado = "AVANZANDO";
-                this.velocidadActual = 1f;
-                break;
-            case "RETROCEDER":
-                this.estado = "RETROCEDIENDO";
-                this.velocidadActual = 1f;
-                break;
-            default:
-                detenerCarro();
-        }
-    }
+	public void monitorearSeguridad() {
+	}
 
-    public void detenerCarro() {
-        this.estado = "QUIETO";
-        this.velocidadActual = 0f;
-        this.comandoActual = "DETENER";
-    }
+	public void controlarMotor() {
+	}
 
-    public void recibirComando(String comando) {
-        this.comandoActual = comando;
-    }
+	public String getEstado() {
+		return estado;
+	}
 
-    public void controlarIluminacion() {
-        // La logica de iluminacion vive en LedsService
-    }
+	public void setEstado(String estado) {
+		this.estado = estado;
+	}
 
-    public void monitorearSeguridad() {
-        // La logica de seguridad vive en SensorService / EvasionService
-    }
+	public float getVelocidadActual() {
+		return velocidadActual;
+	}
 
-    public void controlarMotor() {
-        // La logica de motores vive en MotorService
-    }
+	public void setVelocidadActual(float velocidadActual) {
+		this.velocidadActual = velocidadActual;
+	}
 
-    public void leerSensores() {
-        // La lectura de sensores vive en SensorService
-    }
+	public String getModoOperacion() {
+		return modoOperacion;
+	}
+
+	public void setModoOperacion(String modoOperacion) {
+		this.modoOperacion = modoOperacion;
+	}
 }
