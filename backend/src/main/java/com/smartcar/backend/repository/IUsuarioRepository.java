@@ -1,4 +1,4 @@
-package com.smartcar.backend.services;
+package com.smartcar.backend.repository;
 
 import com.smartcar.backend.models.Usuario;
 

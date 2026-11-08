@@ -7,11 +7,18 @@ public class SensorService {
     private final SensorAprox sensorAproximidad;
     private final SensorLuz sensorLuz;
     private float umbralDistancia = 20f;
-    private float umbralOscuridad = 30f;
+    // L = 100 - milivoltios * 100 / 3300; 2.5 V equivale aproximadamente a 24%.
+    private float umbralOscuridad = 24f;
 
     public SensorService(SensorAprox sensorAproximidad, SensorLuz sensorLuz) {
         this.sensorAproximidad = sensorAproximidad;
         this.sensorLuz = sensorLuz;
+    }
+
+    // Lo llama MicrocontroladorService con cada paquete D:<cm>,L:<luz%> de la ESP32
+    public void actualizarLecturas(float distanciaCm, float luzPct) {
+        sensorAproximidad.setDistancia(distanciaCm);
+        sensorLuz.setIntensidad(luzPct);
     }
 
     // Un sensor desactivado no reporta obstaculo
@@ -45,4 +52,13 @@ public class SensorService {
     public void setUmbralOscuridad(float umbralOscuridad) {
         this.umbralOscuridad = umbralOscuridad;
     }
+
+    public float consultarDistancia() {
+        return sensorAproximidad.medirDistancia();
+    }
+
+    public float consultarNivelLuz() {
+        return sensorLuz.medirIntensidad();
+    }
+
 }

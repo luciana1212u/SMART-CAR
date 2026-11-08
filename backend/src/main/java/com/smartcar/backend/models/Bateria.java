@@ -14,7 +14,7 @@ public class Bateria {
     }
 
     public void actualizarNivel(int nivel) {
-        this.nivel = Math.max(0, Math.min(100, nivel));
+        this.nivel = nivel < 0 ? -1 : Math.min(100, nivel);
     }
 
     public float getVoltaje() {

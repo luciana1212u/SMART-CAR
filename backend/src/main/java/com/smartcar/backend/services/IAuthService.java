@@ -10,4 +10,6 @@ public interface IAuthService {
     void cerrarSesion();
 
     boolean estaAutenticado();
+
+    Usuario getUsuarioAutenticado();
 }

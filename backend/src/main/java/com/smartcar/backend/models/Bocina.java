@@ -44,6 +44,15 @@ public class Bocina {
         this.estaSonando = false;
     }
 
+    // Refleja lo que reporta la ESP32 (campo H): 0 apagada, 1 manual, 2 retroceso, 3 proximidad
+    public void sincronizar(int codigo) {
+        switch (codigo) {
+            case 1 -> { this.patron = LARGO; this.estaSonando = true; }
+            case 2, 3 -> { this.patron = INTERMITENTE; this.estaSonando = true; }
+            default -> { this.patron = APAGADA; this.estaSonando = false; }
+        }
+    }
+
     public void actualizar(long ahoraMs) {
         if (INTERMITENTE.equals(patron)) {
             if (ahoraMs - ultimoCambioMs >= intervaloMs) {

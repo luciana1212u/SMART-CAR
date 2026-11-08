@@ -16,7 +16,7 @@ public class BateriaService {
     }
 
     public boolean esBaja() {
-        return bateria.obtenerNivel() < nivelMinimo;
+        return bateria.obtenerNivel() >= 0 && bateria.obtenerNivel() < nivelMinimo;
     }
 
     public int getNivelMinimo() {
