@@ -31,6 +31,11 @@
 	</properties>
 	<dependencies>
 		<dependency>
+			<groupId>org.simpleble</groupId>
+			<artifactId>simplejavable</artifactId>
+			<version>1.4.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
@@ -49,6 +54,15 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>com/smartcar/backend/**/*.java</include>
+					</includes>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

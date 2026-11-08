@@ -19,4 +19,8 @@ public class Leds {
     public void apagar() {
         this.estado = false;
     }
+
+    public void sincronizar(boolean encendido) {
+        this.estado = encendido;
+    }
 }

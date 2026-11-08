@@ -1,12 +1,12 @@
-package com.smartcar.backend.services;
+package com.smartcar.backend.repository;
 
 import com.smartcar.backend.models.Usuario;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 public class UsuarioRepository implements IUsuarioRepository {
-    private final Map<String, Usuario> usuarios = new HashMap<>();
+    private final Map<String, Usuario> usuarios = new ConcurrentHashMap<>();
 
     @Override
     public void guardar(Usuario usuario) {

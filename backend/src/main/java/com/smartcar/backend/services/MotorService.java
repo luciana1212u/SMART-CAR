@@ -11,6 +11,17 @@ public class MotorService {
         this.motorD = motorD;
     }
 
+    // Codigos de movimiento del .ino: 0 parado, 1 adelante, 2 atras, 3 izquierda, 4 derecha
+    public void aplicarMovimiento(int codigo) {
+        switch (codigo) {
+            case 1 -> avanzar();
+            case 2 -> retroceder();
+            case 3 -> girarIzquierda();
+            case 4 -> girarDerecha();
+            default -> detenerMotores();
+        }
+    }
+
     public void avanzar() {
         motorI.girarAdelante();
         motorD.girarAdelante();

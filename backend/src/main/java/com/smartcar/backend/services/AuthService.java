@@ -1,11 +1,12 @@
 package com.smartcar.backend.services;
 
 import com.smartcar.backend.models.Usuario;
+import com.smartcar.backend.repository.IUsuarioRepository;
 
 public class AuthService implements IAuthService {
     private final IUsuarioRepository repositorio;
     private final IPasswordHasher hasher;
-    private Usuario usuarioAutenticado;
+    private volatile Usuario usuarioAutenticado;
     private int intentosFallidos;
     private int siguienteId = 1;
 
@@ -16,7 +17,11 @@ public class AuthService implements IAuthService {
     }
 
     @Override
-    public Usuario registrar(String nombre, String nombreUsuario, String password) {
+    public synchronized Usuario registrar(String nombre, String nombreUsuario, String password) {
+        if (nombre == null || nombre.isBlank() || nombreUsuario == null || nombreUsuario.isBlank()
+                || password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Nombre, usuario y contrasena son obligatorios");
+        }
         if (repositorio.existe(nombreUsuario)) {
             throw new IllegalArgumentException("El usuario ya existe: " + nombreUsuario);
         }
@@ -29,6 +34,9 @@ public class AuthService implements IAuthService {
 
     @Override
     public boolean iniciarSesion(String nombreUsuario, String password) {
+        if (nombreUsuario == null || nombreUsuario.isBlank() || password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Usuario y contrasena son obligatorios");
+        }
         Usuario usuario = repositorio.buscarPorNombreUsuario(nombreUsuario);
         if (usuario != null && hasher.verificar(password, usuario.getSalt(), usuario.getPasswordHash())) {
             this.usuarioAutenticado = usuario;

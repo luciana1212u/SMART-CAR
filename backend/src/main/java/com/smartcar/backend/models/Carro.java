@@ -15,6 +15,7 @@ public class Carro {
     private Bateria bateria;
     private final List<Leds> leds = new ArrayList<>();
     private final List<Sensor> sensores = new ArrayList<>();
+    private final Bocina bocina = new Bocina();
 
     public Carro() {
         this.estado = "QUIETO";
@@ -22,8 +23,22 @@ public class Carro {
         this.direccion = "ADELANTE";
         this.modoOperacion = "MANUAL";
         this.microcontrolador = new Microcontrolador();
-        this.bateria = new Bateria(100, 12f);
+        this.bateria = new Bateria(-1, -1f);
+        motores.add(new Motor(1));
+        motores.add(new Motor(2));
+        leds.add(new Leds());
+        leds.add(new Leds());
+        sensores.add(new SensorAprox(1, 200f));
+        sensores.add(new SensorLuz(2));
     }
+
+    public Motor getMotorIzquierdo() { return motores.get(0); }
+    public Motor getMotorDerecho() { return motores.get(1); }
+    public Leds getLuces() { return leds.get(0); }
+    public Leds getLedPlaca() { return leds.get(1); }
+    public SensorAprox getSensorAproximidad() { return (SensorAprox) sensores.get(0); }
+    public SensorLuz getSensorLuz() { return (SensorLuz) sensores.get(1); }
+    public Bocina getBocina() { return bocina; }
 
     public void cambiarEstado(String estado) {
         this.estado = estado;
