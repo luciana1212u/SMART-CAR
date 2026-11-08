@@ -24,11 +24,5 @@ El backend debe ejecutarse por separado y utiliza exclusivamente la ESP32 fisica
 Las dependencias y las compilaciones generadas no se copian. `npm.cmd ci` instala
 las dependencias fijadas en `package-lock.json`.
 
-En Spring Boot, `backend/src/main/java` contiene las fuentes Java y
-`backend/src/main/resources/static` sirve archivos web estaticos. Las fuentes de
-Expo pertenecen a esta carpeta `frontend`; una exportacion web se genera con
-`npm.cmd run build:web` en `smartcar-app/dist`.
 
-Los originales en `backend/src/main/java/com/smartcar` se conservan porque esta
-operacion copia las carpetas. Para seguir desarrollando el frontend, usar las
-copias de `frontend/`.
+
