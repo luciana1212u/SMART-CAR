@@ -50,6 +50,13 @@
     		<groupId>org.springframework.boot</groupId>
     		<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
+		<!-- Verificacion de firma/claims de los JWT de Supabase Auth -->
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>10.9.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
