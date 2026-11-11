@@ -3,10 +3,28 @@
     "name": "SmartCar",
     "slug": "smartcar",
     "version": "1.0.0",
-    "platforms": ["android", "ios", "web"],
+    "platforms": [
+      "android",
+      "ios",
+      "web"
+    ],
     "userInterfaceStyle": "automatic",
-    "android": { "usesCleartextTraffic": true },
-    "ios": { "infoPlist": { "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true } } },
-    "web": { "bundler": "metro", "output": "single" }
+    "android": {
+      "usesCleartextTraffic": true
+    },
+    "ios": {
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

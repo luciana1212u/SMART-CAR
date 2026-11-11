@@ -1,4 +1,6 @@
 // Cliente HTTP del backend. Toda la app habla SOLO con esto; el Bluetooth lo maneja el backend.
+// Cada peticion protegida lleva su JWT (Authorization: Bearer); si caduco se renueva solo con el refresh token.
+import { actualizarTokens, borrarSesion, guardarSesion, tokens } from './sesion';
 
 export class ApiError extends Error {
   constructor(status, codigo, mensaje) {
@@ -24,14 +26,20 @@ export function normalizarUrl(texto) {
   }
 }
 
+// Una sola renovacion a la vez en toda la app: el refresh token es de un solo uso.
+let renovando = null;
+
 export function crearApi(baseUrl) {
-  async function pedir(metodo, ruta, cuerpo) {
+  async function enviar(metodo, ruta, cuerpo, conToken) {
     const control = new AbortController();
     const temporizador = setTimeout(() => control.abort(), 6000);
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      const t = conToken ? tokens() : null;
+      if (t) headers.Authorization = 'Bearer ' + t.accessToken;
       const resp = await fetch(baseUrl + ruta, {
         method: metodo,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: cuerpo ? JSON.stringify(cuerpo) : undefined,
         signal: control.signal,
       });
@@ -55,11 +63,54 @@ export function crearApi(baseUrl) {
     }
   }
 
+  // Devuelve null si se renovo, o el ApiError si no se pudo.
+  function renovar() {
+    if (!renovando) {
+      renovando = (async () => {
+        const t = tokens();
+        if (!t) return new ApiError(401, 'SIN_SESION', 'Sesion invalida');
+        try {
+          const r = await enviar('POST', '/api/auth/refresh', { refreshToken: t.refreshToken }, false);
+          await actualizarTokens(r.accessToken, r.refreshToken);
+          return null;
+        } catch (e) {
+          return e;
+        } finally {
+          renovando = null;
+        }
+      })();
+    }
+    return renovando;
+  }
+
+  async function pedir(metodo, ruta, cuerpo, { publica = false, sinReintento = false } = {}) {
+    try {
+      return await enviar(metodo, ruta, cuerpo, !publica);
+    } catch (e) {
+      const caduco = e instanceof ApiError && e.status === 401 && ['SIN_SESION', 'SESION_EXPIRADA'].includes(e.codigo);
+      if (publica || sinReintento || !caduco || !tokens()) throw e;
+      const fallo = await renovar();
+      if (fallo) throw fallo;          // refresh rechazado (401) o sin red: se informa tal cual
+      return enviar(metodo, ruta, cuerpo, true);
+    }
+  }
+
   return {
     // --- AuthController ---
-    registrar: (nombre, usuario, password) => pedir('POST', '/api/auth/registro', { nombre, usuario, password }),
-    iniciarSesion: (usuario, password) => pedir('POST', '/api/auth/login', { usuario, password }),
-    cerrarSesion: () => pedir('POST', '/api/auth/logout'),
+    registrar: (nombre, usuario, email, password) =>
+      pedir('POST', '/api/auth/registro', { nombre, usuario, email, password }, { publica: true }),
+    usuarioDisponible: (usuario) =>
+      pedir('GET', '/api/auth/usuario-disponible?usuario=' + encodeURIComponent(usuario), null, { publica: true }),
+    iniciarSesion: async (email, password) => {
+      const r = await pedir('POST', '/api/auth/login', { email, password }, { publica: true });
+      await guardarSesion({ url: baseUrl, accessToken: r.accessToken, refreshToken: r.refreshToken, usuario: r.usuario });
+      return r;
+    },
+    cerrarSesion: async () => {
+      try { await pedir('POST', '/api/auth/logout', null, { sinReintento: true }); }
+      catch { /* sin red o token vencido: igual se borra la sesion local */ }
+      await borrarSesion();
+    },
     verificarSesion: () => pedir('GET', '/api/auth/sesion'),
     // --- MovimientoController ---
     enviarMovimiento: (comando) => pedir('POST', '/api/movimiento', { comando }),

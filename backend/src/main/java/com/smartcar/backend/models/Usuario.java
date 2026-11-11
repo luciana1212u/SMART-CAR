@@ -1,24 +1,23 @@
 package com.smartcar.backend.models;
 
 public class Usuario {
-    private int id;
+    private String id;
     private String nombre;
     private String usuario;
-    private String passwordHash;
-    private String salt;
+    private String email;
 
     // Agregacion: el usuario puede tener instalada una aplicacion
     private Aplicacion aplicacion;
 
-    public Usuario(int id, String nombre, String usuario, String passwordHash, String salt) {
+    /** La contrasena no existe en el backend: la gestiona Supabase Auth. */
+    public Usuario(String id, String nombre, String usuario, String email) {
         this.id = id;
         this.nombre = nombre;
         this.usuario = usuario;
-        this.passwordHash = passwordHash;
-        this.salt = salt;
+        this.email = email;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
@@ -30,12 +29,8 @@ public class Usuario {
         return usuario;
     }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public String getSalt() {
-        return salt;
+    public String getEmail() {
+        return email;
     }
 
     public Aplicacion getAplicacion() {

@@ -3,13 +3,13 @@ package com.smartcar.backend.config;
 import com.smartcar.backend.comunicacion.Esp32BleTransport;
 import com.smartcar.backend.comunicacion.IEsp32Transport;
 import com.smartcar.backend.models.Carro;
-import com.smartcar.backend.repository.IUsuarioRepository;
-import com.smartcar.backend.repository.UsuarioRepository;
 import com.smartcar.backend.services.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import java.time.Clock;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -34,18 +34,19 @@ public class AppConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public IUsuarioRepository usuarioRepository() {
-        return new UsuarioRepository();
+    public SupabaseAuthClient supabaseAuthClient(@Value("${smartcar.supabase.url:}") String url,
+                                                 @Value("${smartcar.supabase.anon-key:}") String anonKey) {
+        return new SupabaseAuthClient(url, anonKey);
     }
 
+    /** Usuarios y contrasenas viven en Supabase Auth; el backend solo valida los JWT que esta emite. */
     @Bean
-    public IPasswordHasher passwordHasher() {
-        return new PasswordHasherSha256();
-    }
-
-    @Bean
-    public IAuthService authService(IUsuarioRepository repo, IPasswordHasher hasher) {
-        return new AuthService(repo, hasher);
+    public IAuthService authService(SupabaseAuthClient supabase,
+                                    @Value("${smartcar.supabase.jwt-secret:}") String jwtSecret,
+                                    @Value("${smartcar.sesion.silencio-ms:3000}") long silencioMs) {
+        JwtValidator validador = supabase.estaConfigurado()
+                ? new JwtValidator(supabase.getUrl(), jwtSecret) : null;
+        return new AuthService(supabase, validador, silencioMs, Clock.systemUTC());
     }
 
     @Bean
@@ -89,9 +90,12 @@ public class AppConfig implements WebMvcConfigurer {
         return svc;
     }
 
-    /** Permite probar desde paginas web (como el HTML de prueba). La app movil no lo necesita. */
+    @Value("${smartcar.cors.origenes:*}")
+    private String[] origenesCors;
+
+    /** Permite la web (Expo Web / HTML de prueba). La app movil no usa CORS. Se autentica con Bearer, sin cookies. */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**").allowedOrigins("*").allowedMethods("GET", "POST", "PUT", "DELETE");
+        registry.addMapping("/api/**").allowedOrigins(origenesCors).allowedMethods("GET", "POST", "PUT", "DELETE");
     }
 }

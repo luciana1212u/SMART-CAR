@@ -1,5 +1,6 @@
 package com.smartcar.backend.config;
 
+import com.smartcar.backend.excepciones.AuthException;
 import com.smartcar.backend.excepciones.BateriaBajaException;
 import com.smartcar.backend.excepciones.CarroNoConectadoException;
 import com.smartcar.backend.excepciones.SesionNoIniciadaException;
@@ -19,6 +20,11 @@ public class ApiExceptionHandler {
         return responder(HttpStatus.UNAUTHORIZED, "SIN_SESION", e);
     }
 
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<Map<String, String>> errorAuth(AuthException e) {
+        return responder(e.getEstado(), e.getCodigo(), e);
+    }
+
     @ExceptionHandler(CarroNoConectadoException.class)
     public ResponseEntity<Map<String, String>> sinCarro(CarroNoConectadoException e) {
         return responder(HttpStatus.SERVICE_UNAVAILABLE, "CARRO_NO_CONECTADO", e);
@@ -35,6 +41,7 @@ public class ApiExceptionHandler {
     }
 
     private ResponseEntity<Map<String, String>> responder(HttpStatus estado, String codigo, Exception e) {
-        return ResponseEntity.status(estado).body(Map.of("error", codigo, "mensaje", e.getMessage()));
+        String mensaje = e.getMessage() == null ? codigo : e.getMessage();
+        return ResponseEntity.status(estado).body(Map.of("error", codigo, "mensaje", mensaje));
     }
 }

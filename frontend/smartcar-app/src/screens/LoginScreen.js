@@ -14,6 +14,7 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
   const [modoRegistro, setModoRegistro] = useState(false);
   const [nombre, setNombre] = useState('');
   const [usuario, setUsuario] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState(mensajeInicial ? { texto: mensajeInicial, error: true } : null);
@@ -26,19 +27,30 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
     if (cargando) return;
     const url = normalizarUrl(servidor);
     if (!url) return setMensaje({ texto: 'Escribe una IP o URL HTTP valida del backend', error: true });
-    if (!usuario.trim() || !password) return setMensaje({ texto: 'Usuario y contrasena son obligatorios', error: true });
+    const correo = email.trim().toLowerCase();
+    if (!correo || !password) return setMensaje({ texto: 'Correo y contrasena son obligatorios', error: true });
+    const nombreUsuario = usuario.trim().toLowerCase();
+    if (modoRegistro) {
+      if (!nombre.trim()) return setMensaje({ texto: 'Escribe tu nombre', error: true });
+      if (!/^[a-z0-9_]{3,20}$/.test(nombreUsuario)) {
+        return setMensaje({ texto: 'El usuario debe tener de 3 a 20 caracteres: letras minusculas, numeros o _', error: true });
+      }
+      if (password.length < 8) return setMensaje({ texto: 'La contrasena debe tener al menos 8 caracteres', error: true });
+    }
 
     setCargando(true);
     setMensaje(null);
     const api = crearApi(url);
     try {
       if (modoRegistro) {
-        await api.registrar(nombre.trim(), usuario.trim(), password);
+        await api.registrar(nombre.trim(), nombreUsuario, correo, password);
         setModoRegistro(false);
-        setMensaje({ texto: 'Cuenta creada. Ahora inicia sesion.', error: false });
+        setPassword('');
+        setMensaje({ texto: 'Cuenta creada. Ahora inicia sesion con tu correo.', error: false });
       } else {
-        const r = await api.iniciarSesion(usuario.trim(), password);
+        const r = await api.iniciarSesion(correo, password);
         await AsyncStorage.setItem(CLAVE_URL, url).catch(() => {});
+        setPassword('');
         onSesionIniciada(url, r.usuario);
       }
     } catch (e) {
@@ -72,12 +84,23 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
           </>
         )}
 
-        <Text style={[s.etiqueta, { color: t.suave }]}>Usuario</Text>
-        <TextInput style={campo} value={usuario} onChangeText={setUsuario} autoCapitalize="none"
-          accessibilityLabel="Usuario" editable={!cargando}
+        {modoRegistro && (
+          <>
+            <Text style={[s.etiqueta, { color: t.suave }]}>Usuario (unico: minusculas, numeros o _)</Text>
+            <TextInput style={campo} value={usuario} onChangeText={setUsuario} autoCapitalize="none"
+              accessibilityLabel="Usuario" editable={!cargando} maxLength={20}
+              autoCorrect={false} placeholderTextColor={t.suave} />
+          </>
+        )}
+
+        <Text style={[s.etiqueta, { color: t.suave }]}>Correo electronico</Text>
+        <TextInput style={campo} value={email} onChangeText={setEmail} autoCapitalize="none"
+          accessibilityLabel="Correo" editable={!cargando} keyboardType="email-address"
           autoCorrect={false} placeholderTextColor={t.suave} />
 
-        <Text style={[s.etiqueta, { color: t.suave }]}>Contrasena</Text>
+        <Text style={[s.etiqueta, { color: t.suave }]}>
+          {modoRegistro ? 'Contrasena (minimo 8 caracteres)' : 'Contrasena'}
+        </Text>
         <TextInput style={campo} value={password} onChangeText={setPassword} secureTextEntry
           accessibilityLabel="Contrasena" editable={!cargando}
           autoCapitalize="none" placeholderTextColor={t.suave} onSubmitEditing={enviar} />

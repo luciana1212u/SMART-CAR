@@ -81,7 +81,8 @@ public class MicrocontroladorService implements IEsp32Transport.Oyente {
 
     public void ejecutarCiclo() {
         if (!transporte.estaConectado()) return;
-        if ((!auth.estaAutenticado() || bateria.esBaja()) && !carro.estaQuieto()) detenerCarro();
+        // Parada segura: sin peticiones autenticadas recientes de la app (o con bateria baja) el carro se detiene
+        if ((!auth.comunicacionVigente() || bateria.esBaja()) && !carro.estaQuieto()) detenerCarro();
         leds.actualizarLedPlaca(carro.estaQuieto());
     }
 

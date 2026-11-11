@@ -4,9 +4,11 @@ package com.smartcar.backend.dto;
 public final class Peticiones {
     private Peticiones() { }
 
-    public record Registro(String nombre, String usuario, String password) { }
+    public record Registro(String nombre, String usuario, String email, String password) { }
 
-    public record Login(String usuario, String password) { }
+    public record Login(String email, String password) { }
+
+    public record Refresco(String refreshToken) { }
 
     public record Comando(String comando) { }
 
