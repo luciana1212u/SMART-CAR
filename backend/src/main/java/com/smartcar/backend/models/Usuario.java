@@ -7,7 +7,6 @@ public class Usuario {
     private String passwordHash;
     private String salt;
 
-    // Agregacion: el usuario puede tener instalada una aplicacion
     private Aplicacion aplicacion;
 
     public Usuario(int id, String nombre, String usuario, String passwordHash, String salt) {

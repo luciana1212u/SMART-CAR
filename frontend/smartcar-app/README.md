@@ -8,7 +8,7 @@ usan React Native y React Native Web; los mismos controles consumen la API HTTP.
 El Bluetooth sigue a cargo del backend en el PC.
 
 La pantalla de control se adapta al ancho disponible: una columna en celular
-y dos columnas a partir de 900 px (movimiento y velocidad junto a accesorios).
+y dos columnas a partir de 900 px (movimiento junto a accesorios).
 El inicio de sesion queda centrado y permite desplazarse al abrir el teclado.
 
 ```cmd
@@ -47,3 +47,6 @@ La exportacion web no genera un APK ni una app iOS. Para usar el telefono durant
 el desarrollo, abrir el proyecto con una version compatible de Expo Go.
 Las funciones de registro, inicio de sesion, sensores y control requieren el backend;
 no se incluyen datos simulados en el frontend.
+
+La interfaz no muestra bateria ni velocidad y no permite ajustar el PWM.
+El backend ignora esos datos de telemetria y no bloquea el movimiento por bateria baja.

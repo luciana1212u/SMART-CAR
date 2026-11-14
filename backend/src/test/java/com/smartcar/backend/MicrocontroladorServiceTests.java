@@ -2,7 +2,6 @@ package com.smartcar.backend;
 
 import com.smartcar.backend.comunicacion.IEsp32Transport;
 import com.smartcar.backend.config.AppConfig;
-import com.smartcar.backend.excepciones.BateriaBajaException;
 import com.smartcar.backend.excepciones.SesionNoIniciadaException;
 import com.smartcar.backend.models.Carro;
 import com.smartcar.backend.services.*;
@@ -29,7 +28,7 @@ class MicrocontroladorServiceTests {
         servicio = config.microcontroladorService(carro, sensores,
                 config.ledsService(carro, sensores, auth, transporte), motores,
                 config.bocinaService(carro, auth, transporte), auth,
-                config.bateriaService(carro, 20), config.evasionService(motores, sensores), transporte);
+                config.evasionService(carro, transporte), transporte);
     }
 
     @Test
@@ -45,13 +44,19 @@ class MicrocontroladorServiceTests {
     }
 
     @Test
-    void bateriaBajaBloqueaMovimientoPeroPermiteDetener() {
+    void bateriaBajaNoBloqueaMovimientoNiModoAutomatico() {
         when(auth.estaAutenticado()).thenReturn(true);
         servicio.onMensaje("D:120,L:70,B:10");
-        assertThrows(BateriaBajaException.class, () -> servicio.recibirComando("MODO_AUTO"));
+        servicio.recibirComando("MODO_AUTO");
+        servicio.recibirComando("AVANZAR");
+        verify(transporte).enviar("AVANZAR");
+        when(transporte.estaConectado()).thenReturn(true);
+        servicio.onMensaje("M:A,F:0,H:0,X:1");
+        servicio.ejecutarCiclo();
+        verify(transporte, never()).enviar("DETENER");
         servicio.recibirComando("DETENER");
         verify(transporte).enviar("DETENER");
-        verify(transporte, never()).enviar("MODO_AUTO");
+        verify(transporte).enviar("MODO_AUTO");
     }
 
     @Test
@@ -65,8 +70,9 @@ class MicrocontroladorServiceTests {
         assertTrue(estado.telemetriaActiva());
         assertEquals("AUTO", estado.modo());
         assertEquals("RETROCEDIENDO", estado.estado());
-        assertEquals(85, estado.bateriaPct());
-        assertEquals(23f, estado.velocidadCms());
+        assertEquals(-1, estado.bateriaPct());
+        assertFalse(estado.bateriaBaja());
+        assertEquals(-1f, estado.velocidadCms());
         assertTrue(estado.hayObstaculo());
         assertTrue(estado.hayOscuridad());
         assertTrue(estado.lucesEncendidas());
@@ -78,7 +84,7 @@ class MicrocontroladorServiceTests {
         estado = servicio.consultarEstadoCompleto();
         assertFalse(estado.telemetriaActiva());
         assertEquals("QUIETO", estado.estado());
-        assertEquals(0f, estado.velocidadCms());
+        assertEquals(-1f, estado.velocidadCms());
         assertFalse(estado.bocinaSonando());
     }
 
@@ -106,6 +112,8 @@ class MicrocontroladorServiceTests {
         servicio.onMensaje("M:M,F:0,H:0,X:1");
         servicio.ejecutarCiclo();
         verify(transporte).enviar("DETENER");
+        // El movimiento confirmado se actualiza al recibir telemetria de la ESP32.
+        servicio.onMensaje("M:M,F:0,H:0,X:0");
         assertEquals("QUIETO", carro.getEstado());
     }
 }

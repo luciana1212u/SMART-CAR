@@ -1,53 +1,87 @@
 package com.smartcar.backend.models;
 
-public class microcontrolador {
+public class Microcontrolador {
+    private volatile String estado;
+    private volatile float velocidadActual;
+    private volatile String modoOperacion;
+    private volatile String comandoActual;
 
-	private String estado;
-	private float velocidadActual;
-	private String modoOperacion;
+    public Microcontrolador() {
+        this.estado = "QUIETO";
+        this.velocidadActual = 0f;
+        this.modoOperacion = "MANUAL";
+        this.comandoActual = "DETENER";
+    }
 
-	public void procesarDatos() {
-	}
+    public String getEstado() {
+        return estado;
+    }
 
-	public void ejecutarComando() {
-	}
+    public float getVelocidadActual() {
+        return velocidadActual;
+    }
 
-	public void detenerCarro() {
-	}
+    public String getModoOperacion() {
+        return modoOperacion;
+    }
 
-	public void recibirComando(String comando) {
-	}
+    public void setModoOperacion(String modoOperacion) {
+        this.modoOperacion = modoOperacion;
+    }
 
-	public void controlarIluminacion() {
-	}
+    public String getComandoActual() {
+        return comandoActual;
+    }
 
-	public void monitorearSeguridad() {
-	}
+    // Espejo del estado real: lo llena MicrocontroladorService con la telemetria de la ESP32
+    public void actualizarEstado(String estado, float velocidadActual, String modoOperacion) {
+        this.estado = estado;
+        this.velocidadActual = velocidadActual;
+        this.modoOperacion = modoOperacion;
+    }
 
-	public void controlarMotor() {
-	}
+    public void procesarDatos() {
+        // El procesamiento de los paquetes de telemetria vive en MicrocontroladorService
+    }
 
-	public String getEstado() {
-		return estado;
-	}
+    public void ejecutarComando() {
+        switch (comandoActual) {
+            case "AVANZAR":
+                this.estado = "AVANZANDO";
+                this.velocidadActual = 1f;
+                break;
+            case "RETROCEDER":
+                this.estado = "RETROCEDIENDO";
+                this.velocidadActual = 1f;
+                break;
+            default:
+                detenerCarro();
+        }
+    }
 
-	public void setEstado(String estado) {
-		this.estado = estado;
-	}
+    public void detenerCarro() {
+        this.estado = "QUIETO";
+        this.velocidadActual = 0f;
+        this.comandoActual = "DETENER";
+    }
 
-	public float getVelocidadActual() {
-		return velocidadActual;
-	}
+    public void recibirComando(String comando) {
+        this.comandoActual = comando;
+    }
 
-	public void setVelocidadActual(float velocidadActual) {
-		this.velocidadActual = velocidadActual;
-	}
+    public void controlarIluminacion() {
+        // La logica de iluminacion vive en LedsService
+    }
 
-	public String getModoOperacion() {
-		return modoOperacion;
-	}
+    public void monitorearSeguridad() {
+        // La logica de seguridad vive en SensorService / EvasionService
+    }
 
-	public void setModoOperacion(String modoOperacion) {
-		this.modoOperacion = modoOperacion;
-	}
+    public void controlarMotor() {
+        // La logica de motores vive en MotorService
+    }
+
+    public void leerSensores() {
+        // La lectura de sensores vive en SensorService
+    }
 }

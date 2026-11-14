@@ -15,6 +15,10 @@ public class Carro {
     private Bateria bateria;
     private final List<Leds> leds = new ArrayList<>();
     private final List<Sensor> sensores = new ArrayList<>();
+    private final SensorAprox sensorAproximidad = new SensorAprox(1, 400f);
+    private final SensorLuz sensorLuz = new SensorLuz(2);
+    private final Leds luces = new Leds();      // luces delanteras
+    private final Leds ledPlaca = new Leds();   // LED de la placa: indica carro quieto
     private final Bocina bocina = new Bocina();
 
     public Carro() {
@@ -23,22 +27,14 @@ public class Carro {
         this.direccion = "ADELANTE";
         this.modoOperacion = "MANUAL";
         this.microcontrolador = new Microcontrolador();
-        this.bateria = new Bateria(-1, -1f);
-        motores.add(new Motor(1));
-        motores.add(new Motor(2));
-        leds.add(new Leds());
-        leds.add(new Leds());
-        sensores.add(new SensorAprox(1, 200f));
-        sensores.add(new SensorLuz(2));
+        this.bateria = new Bateria(100, 12f);
+        this.motores.add(new Motor(1));   // izquierdo
+        this.motores.add(new Motor(2));   // derecho
+        this.sensores.add(sensorAproximidad);
+        this.sensores.add(sensorLuz);
+        this.leds.add(luces);
+        this.leds.add(ledPlaca);
     }
-
-    public Motor getMotorIzquierdo() { return motores.get(0); }
-    public Motor getMotorDerecho() { return motores.get(1); }
-    public Leds getLuces() { return leds.get(0); }
-    public Leds getLedPlaca() { return leds.get(1); }
-    public SensorAprox getSensorAproximidad() { return (SensorAprox) sensores.get(0); }
-    public SensorLuz getSensorLuz() { return (SensorLuz) sensores.get(1); }
-    public Bocina getBocina() { return bocina; }
 
     public void cambiarEstado(String estado) {
         this.estado = estado;
@@ -98,5 +94,32 @@ public class Carro {
 
     public List<Sensor> getSensores() {
         return sensores;
+    }
+    public Motor getMotorIzquierdo() {
+        return motores.get(0);
+    }
+
+    public Motor getMotorDerecho() {
+        return motores.get(1);
+    }
+
+    public SensorAprox getSensorAproximidad() {
+        return sensorAproximidad;
+    }
+
+    public SensorLuz getSensorLuz() {
+        return sensorLuz;
+    }
+
+    public Leds getLuces() {
+        return luces;
+    }
+
+    public Leds getLedPlaca() {
+        return ledPlaca;
+    }
+
+    public Bocina getBocina() {
+        return bocina;
     }
 }

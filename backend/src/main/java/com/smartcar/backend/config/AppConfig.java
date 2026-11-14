@@ -25,6 +25,7 @@ public class AppConfig implements WebMvcConfigurer {
 
     @Bean(destroyMethod = "desconectar")
     public IEsp32Transport esp32Transport(
+            @Value("${smartcar.transporte:ble}") String tipo,
             @Value("${smartcar.ble.nombre:SmartCar}") String nombre,
             @Value("${smartcar.ble.servicio}") String servicio,
             @Value("${smartcar.ble.rx}") String rx,
@@ -54,12 +55,6 @@ public class AppConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public BateriaService bateriaService(Carro carro,
-                                         @Value("${smartcar.bateria.nivel-minimo:20}") int nivelMinimo) {
-        return new BateriaService(carro.getBateria(), nivelMinimo);
-    }
-
-    @Bean
     public MotorService motorService(Carro carro) {
         return new MotorService(carro.getMotorIzquierdo(), carro.getMotorDerecho());
     }
@@ -75,16 +70,16 @@ public class AppConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public EvasionService evasionService(MotorService motores, SensorService sensores) {
-        return new EvasionService(motores, sensores);
+    public EvasionService evasionService(Carro carro, IEsp32Transport t) {
+        return new EvasionService(carro, t);
     }
 
     @Bean
     public MicrocontroladorService microcontroladorService(Carro carro, SensorService sensores, LedsService leds,
-            MotorService motores, BocinaService bocina, IAuthService auth, BateriaService bateria,
+            MotorService motores, BocinaService bocina, IAuthService auth,
             EvasionService evasion, IEsp32Transport transporte) {
         MicrocontroladorService svc = new MicrocontroladorService(
-                carro, sensores, leds, motores, bocina, auth, bateria, evasion, transporte);
+                carro, sensores, leds, motores, bocina, auth, evasion, transporte);
         transporte.setOyente(svc);      // todo lo que diga la ESP32 llega al servicio
         return svc;
     }

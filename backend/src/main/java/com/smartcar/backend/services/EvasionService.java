@@ -1,37 +1,33 @@
 package com.smartcar.backend.services;
 
-import java.util.Random;
+import com.smartcar.backend.comunicacion.IEsp32Transport;
+import com.smartcar.backend.models.Carro;
 
+/**
+ * Modo automatico con evasion de obstaculos.
+ * La maquina de estados (detener, alerta, girar, medir, retroceder) corre DENTRO de la ESP32
+ * porque necesita reaccionar en milisegundos; el backend solo la activa o desactiva.
+ */
 public class EvasionService {
-    private final MotorService motorService;
-    private final SensorService sensorService;
-    private int tiempoMaxGiroMs = 1500;
-    private final Random random = new Random();
+    private final Carro carro;
+    private final IEsp32Transport transporte;
 
-    public EvasionService(MotorService motorService, SensorService sensorService) {
-        this.motorService = motorService;
-        this.sensorService = sensorService;
+    public EvasionService(Carro carro, IEsp32Transport transporte) {
+        this.carro = carro;
+        this.transporte = transporte;
     }
 
-    // Detiene, elige un lado y gira para esquivar el obstaculo
-    public void evadir() {
-        motorService.detenerMotores();
-        if ("IZQUIERDA".equals(elegirLado())) {
-            motorService.girarIzquierda();
-        } else {
-            motorService.girarDerecha();
-        }
+    public void activar() {
+        transporte.enviar("MODO_AUTO");
+        carro.setModoOperacion("AUTO");
     }
 
-    public String elegirLado() {
-        return random.nextBoolean() ? "IZQUIERDA" : "DERECHA";
+    public void desactivar() {
+        transporte.enviar("MODO_MANUAL");   // la ESP32 tambien detiene los motores
+        carro.setModoOperacion("MANUAL");
     }
 
-    public int getTiempoMaxGiroMs() {
-        return tiempoMaxGiroMs;
-    }
-
-    public void setTiempoMaxGiroMs(int tiempoMaxGiroMs) {
-        this.tiempoMaxGiroMs = tiempoMaxGiroMs;
+    public boolean estaActivo() {
+        return "AUTO".equals(carro.getModoOperacion());
     }
 }

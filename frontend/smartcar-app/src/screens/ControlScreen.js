@@ -4,7 +4,6 @@ import { ApiError, crearApi } from '../api';
 import { useTema } from '../theme';
 
 const INTERVALO_MS = 500;
-const VELOCIDADES = [100, 150, 200, 255];
 
 export default function ControlScreen({ baseUrl, usuario, onSalir }) {
   const t = useTema();
@@ -13,7 +12,6 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
   const api = useMemo(() => crearApi(baseUrl), [baseUrl]);
   const [estado, setEstado] = useState(null);
   const [aviso, setAviso] = useState(null);
-  const [velocidad, setVelocidad] = useState(200);
   const cola = useRef(Promise.resolve());     // las ordenes salen en fila: nunca se cruzan
   const consultando = useRef(false);
   const temporizadorAviso = useRef(null);
@@ -99,9 +97,6 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
           {estado && listo && !estado.telemetriaActiva && (
             <Text style={{ color: t.alerta, marginTop: 6 }}>Sin datos recientes del carro</Text>
           )}
-          {estado?.bateriaBaja && (
-            <Text style={{ color: t.alerta, marginTop: 6 }}>Bateria baja: el carro no se movera hasta cargarlo</Text>
-          )}
           {aviso && <Text style={{ color: t.alerta, marginTop: 6, fontWeight: '600' }}>{aviso}</Text>}
         </View>
 
@@ -109,11 +104,6 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
         <View style={s.rejilla}>
           <Dato t={t} titulo="Distancia" valor={dist} alerta={hayObstaculo} />
           <Dato t={t} titulo="Luz" valor={estado ? Math.round(estado.nivelLuz) + ' %' : '—'} />
-          <Dato t={t} titulo="Bateria"
-            valor={estado && listo && estado.telemetriaActiva && estado.bateriaPct >= 0 ? `${estado.bateriaPct} %` : 'Sin medidor'}
-            extra={estado && listo && estado.telemetriaActiva && estado.voltaje >= 0 ? estado.voltaje.toFixed(1) + ' V' : null} alerta={estado?.bateriaBaja} />
-          <Dato t={t} titulo="Potencia del motor" valor={estado && listo && estado.telemetriaActiva ? estado.pwmPct + ' % PWM' : '—'}
-            extra="Velocidad real: sin sensor" />
           <Dato t={t} titulo="Estado" valor={estado ? textoEstado(estado.estado) : '—'} />
           <Dato t={t} titulo="Modo" valor={estado ? (auto ? 'Automatico' : 'Manual') : '—'} />
         </View>
@@ -134,26 +124,12 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
           <BotonMantener t={t} texto="Retroceder" off={!listo} estilo={s.cAb} onInicio={mover('RETROCEDER')} onFin={parar} />
         </View>
 
-        {/* Modo y velocidad */}
+        {/* Modo */}
         <Titulo t={t}>Modo automatico</Titulo>
         <View style={[s.panel, s.fila, { backgroundColor: t.panel, borderColor: t.linea }]}>
           <Text style={{ flex: 1, color: t.texto }}>Esquivar obstaculos solo</Text>
           <Switch value={!!auto} disabled={!listo}
             onValueChange={(v) => enviar(() => api.enviarMovimiento(v ? 'MODO_AUTO' : 'MODO_MANUAL'))} />
-        </View>
-
-        <Titulo t={t}>Potencia del motor (PWM)</Titulo>
-        <View style={s.fila}>
-          {VELOCIDADES.map((v) => (
-            <Pressable key={v} disabled={!listo}
-              onPress={() => { setVelocidad(v); enviar(() => api.enviarMovimiento('VEL:' + v)); }}
-              style={[s.opcion, { borderColor: t.linea, opacity: listo ? 1 : 0.4,
-                backgroundColor: velocidad === v ? t.acento : t.panel }]}>
-              <Text style={{ color: velocidad === v ? t.sobreAcento : t.texto, fontWeight: '600' }}>
-                {Math.round(v * 100 / 255)}%
-              </Text>
-            </Pressable>
-          ))}
         </View>
 
         </View>

@@ -2,185 +2,266 @@ package com.smartcar.backend.services;
 
 import com.smartcar.backend.comunicacion.IEsp32Transport;
 import com.smartcar.backend.dto.EstadoCarro;
-import com.smartcar.backend.excepciones.BateriaBajaException;
 import com.smartcar.backend.excepciones.SesionNoIniciadaException;
 import com.smartcar.backend.models.Carro;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
 
-/** Envia ordenes y refleja el estado real recibido de la ESP32. */
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/**
+ * Nucleo del backend: es el "Microcontrolador" visto desde el servidor.
+ *  - Hacia la ESP32: valida las ordenes de la app y las envia por Bluetooth.
+ *  - Desde la ESP32: recibe la telemetria y actualiza el modelo del carro.
+ *  - Ciclo de supervision: aplica las reglas R10 y R13.
+ */
 public class MicrocontroladorService implements IEsp32Transport.Oyente {
     private static final Logger log = LoggerFactory.getLogger(MicrocontroladorService.class);
-    private static final Set<String> COMANDOS = Set.of("AVANZAR", "RETROCEDER", "IZQUIERDA",
-            "DERECHA", "DETENER", "MODO_AUTO", "MODO_MANUAL", "ESTADO");
-    private final Carro carro;
-    private final SensorService sensores;
-    private final LedsService leds;
-    private final MotorService motores;
-    private final BocinaService bocina;
-    private final IAuthService auth;
-    private final BateriaService bateria;
-    private final IEsp32Transport transporte;
-    private final ArrayDeque<String> eventos = new ArrayDeque<>();
-    private volatile long ultimaTelemetria;
-    private volatile int pwm;
-    private volatile String ultimoEvento = "";
 
-    public MicrocontroladorService(Carro carro, SensorService sensores, LedsService leds,
-            MotorService motores, BocinaService bocina, IAuthService auth,
-            BateriaService bateria, EvasionService evasion, IEsp32Transport transporte) {
+    private static final Pattern COMANDO_VALIDO = Pattern.compile(
+            "AVANZAR|RETROCEDER|IZQUIERDA|DERECHA|DETENER|MODO_AUTO|MODO_MANUAL|DIST:\\d{1,3}");
+    private static final long TELEMETRIA_VIGENTE_MS = 1500;
+    private static final long REINTENTO_DETENER_MS = 1000;
+    private static final int MAX_EVENTOS = 20;
+
+    private final Carro carro;
+    private final SensorService sensorService;
+    private final LedsService ledsService;
+    private final MotorService motorService;
+    private final BocinaService bocinaService;
+    private final IAuthService authService;
+    private final EvasionService evasionService;
+    private final IEsp32Transport transporte;
+
+    private volatile String comandoPendiente = "DETENER";
+    private volatile long ultimaTelemetriaMs = 0;
+    private volatile long ultimoDetenerForzadoMs = 0;
+    private volatile String ultimoEvento = "";
+    private final Deque<String> eventos = new ArrayDeque<>();
+
+    public MicrocontroladorService(Carro carro, SensorService sensorService,
+                                   LedsService ledsService, MotorService motorService, BocinaService bocinaService,
+                                   IAuthService authService,
+                                   EvasionService evasionService, IEsp32Transport transporte) {
         this.carro = carro;
-        this.sensores = sensores;
-        this.leds = leds;
-        this.motores = motores;
-        this.bocina = bocina;
-        this.auth = auth;
-        this.bateria = bateria;
+        this.sensorService = sensorService;
+        this.ledsService = ledsService;
+        this.motorService = motorService;
+        this.bocinaService = bocinaService;
+        this.authService = authService;
+        this.evasionService = evasionService;
         this.transporte = transporte;
     }
 
+    // =====================================================================
+    //  APP -> BACKEND -> ESP32
+    // =====================================================================
+
     public void exigirSesion() {
-        if (!auth.estaAutenticado()) throw new SesionNoIniciadaException();
+        if (!authService.estaAutenticado()) {
+            throw new SesionNoIniciadaException();
+        }
     }
 
     public void recibirComando(String comando) {
+        // R13: sin sesion iniciada se rechaza el comando
         exigirSesion();
-        if (comando == null || comando.isBlank()) {
-            throw new IllegalArgumentException("Debes indicar un comando");
+        String c = comando == null ? "" : comando.trim().toUpperCase();
+        if (!COMANDO_VALIDO.matcher(c).matches()) {
+            throw new IllegalArgumentException("Comando no valido: " + comando);
         }
-        String c = comando.trim().toUpperCase(Locale.ROOT);
-        if (!COMANDOS.contains(c)) {
-            String[] partes = c.split(":", -1);
-            if (partes.length != 2 || !(partes[0].equals("VEL") || partes[0].equals("DIST"))) {
-                throw new IllegalArgumentException("Comando desconocido: " + c);
-            }
-            int valor;
-            try { valor = Integer.parseInt(partes[1]); }
-            catch (NumberFormatException e) {
-                throw new IllegalArgumentException("El comando requiere un numero entero");
-            }
-            int min = partes[0].equals("VEL") ? 80 : 5;
-            int max = partes[0].equals("VEL") ? 255 : 100;
-            if (valor < min || valor > max) {
-                throw new IllegalArgumentException("El valor debe estar entre " + min + " y " + max);
-            }
+
+        // R10: DETENER siempre se ejecuta
+        if ("DETENER".equals(c)) {
+            detenerCarro();
+            return;
         }
-        if (Set.of("AVANZAR", "RETROCEDER", "IZQUIERDA", "DERECHA", "MODO_AUTO").contains(c)
-                && bateria.esBaja()) {
-            throw new BateriaBajaException(consultarBateria(), bateria.getNivelMinimo());
+
+        if (c.startsWith("DIST:")) {
+            int d = Integer.parseInt(c.substring(5));
+            if (d < 5 || d > 100) {
+                throw new IllegalArgumentException("DIST debe estar entre 5 y 100 cm");
+            }
+            transporte.enviar(c);
+            sensorService.setUmbralDistancia(d);     // el umbral del backend sigue al de la ESP32
+        } else if ("MODO_AUTO".equals(c)) {
+            evasionService.activar();
+        } else if ("MODO_MANUAL".equals(c)) {
+            evasionService.desactivar();
+        } else {
+            // AVANZAR / RETROCEDER / IZQUIERDA / DERECHA
+            transporte.enviar(c);
         }
-        transporte.enviar(c);
-        if (c.startsWith("DIST:")) sensores.setUmbralDistancia(Integer.parseInt(c.substring(5)));
+        comandoPendiente = c;
+        carro.getMicrocontrolador().recibirComando(c);
     }
 
     public void detenerCarro() {
+        comandoPendiente = "DETENER";
+        carro.getMicrocontrolador().recibirComando("DETENER");
         transporte.enviar("DETENER");
-        reflejarMovimiento(0);
     }
+
+    // =====================================================================
+    //  CICLO DE SUPERVISION (lo invoca SupervisorTask cada 250 ms)
+    //  La ESP32 ya se protege sola (obstaculo, desconexion); aqui van las
+    //  reglas que dependen de la sesion.
+    // =====================================================================
 
     public void ejecutarCiclo() {
-        if (!transporte.estaConectado()) return;
-        if ((!auth.estaAutenticado() || bateria.esBaja()) && !carro.estaQuieto()) detenerCarro();
-        leds.actualizarLedPlaca(carro.estaQuieto());
-    }
-
-    @Override
-    public void onConectado() {
-        ultimaTelemetria = 0;
-        carro.getBateria().actualizarNivel(-1);
-        carro.getBateria().setVoltaje(-1);
-        leds.reiniciarLedPlaca();
-    }
-
-    @Override
-    public synchronized void onDesconectado() {
-        ultimaTelemetria = 0;
-        carro.getBateria().actualizarNivel(-1);
-        carro.getBateria().setVoltaje(-1);
-        reflejarMovimiento(0);
-        bocina.sincronizar(0);
-        leds.reiniciarLedPlaca();
-    }
-
-    @Override
-    public synchronized void onMensaje(String mensaje) {
-        if (mensaje == null || mensaje.isBlank()) return;
-        String texto = mensaje.trim();
-        if (texto.startsWith("EV:") || texto.startsWith("OK:") || texto.startsWith("ERR:")) {
-            ultimoEvento = texto;
-            if (eventos.size() == 30) eventos.removeFirst();
-            eventos.addLast(texto);
+        if (!transporte.estaConectado()) {
             return;
         }
         try {
-            Map<String, String> campos = new HashMap<>();
-            for (String campo : texto.split(",")) {
-                String[] par = campo.split(":", 2);
-                if (par.length != 2) throw new IllegalArgumentException("Campo incompleto");
-                campos.put(par[0], par[1]);
+            boolean sinSesion = !authService.estaAutenticado();       // R13
+            if (sinSesion && !carro.estaQuieto()) {
+                long ahora = System.currentTimeMillis();
+                if (ahora - ultimoDetenerForzadoMs >= REINTENTO_DETENER_MS) {
+                    ultimoDetenerForzadoMs = ahora;
+                    log.info("Supervision: sin sesion -> DETENER");
+                    detenerCarro();
+                }
             }
-            if (campos.keySet().containsAll(Set.of("D", "L", "B"))) {
-                float distancia = numero(campos.get("D"));
-                float luz = numero(campos.get("L"));
-                int nivel = Integer.parseInt(campos.get("B"));
-                sensores.actualizarLecturas(distancia, luz);
-                carro.getBateria().actualizarNivel(nivel);
-            } else if (campos.keySet().containsAll(Set.of("M", "F", "H", "X"))) {
-                int luces = Integer.parseInt(campos.get("F"));
-                int sonido = Integer.parseInt(campos.get("H"));
-                int movimiento = Integer.parseInt(campos.get("X"));
-                carro.setModoOperacion("A".equals(campos.get("M")) ? "AUTO" : "MANUAL");
-                leds.sincronizarLuces(luces == 1);
-                bocina.sincronizar(sonido);
-                reflejarMovimiento(movimiento);
-            } else if (campos.keySet().containsAll(Set.of("P", "S", "U"))) {
-                int potencia = Integer.parseInt(campos.get("P"));
-                float velocidad = numero(campos.get("S"));
-                float voltaje = numero(campos.get("U"));
-                pwm = potencia;
-                carro.setVelocidad(velocidad);
-                carro.getBateria().setVoltaje(voltaje);
-            } else return;
-            ultimaTelemetria = System.currentTimeMillis();
-        } catch (IllegalArgumentException e) {
-            log.debug("Telemetria invalida: {}", texto);
+            ledsService.actualizarLedPlaca(carro.estaQuieto());
+        } catch (RuntimeException e) {
+            log.debug("Ciclo de supervision omitido: {}", e.getMessage());
         }
     }
 
-    private static float numero(String texto) {
-        float valor = Float.parseFloat(texto);
-        if (!Float.isFinite(valor)) throw new IllegalArgumentException("Valor no finito");
-        return valor;
+    // =====================================================================
+    //  ESP32 -> BACKEND  (telemetria y eventos)
+    // =====================================================================
+
+    @Override
+    public void onConectado() {
+        ledsService.reiniciarLedPlaca();
+        registrarEvento("EV:ENLACE_BLE_OK");
     }
 
-    private void reflejarMovimiento(int codigo) {
-        motores.aplicarMovimiento(codigo);
-        carro.cambiarEstado(switch (codigo) {
-            case 1 -> "AVANZANDO";
-            case 2 -> "RETROCEDIENDO";
-            case 3 -> "GIRANDO_IZQUIERDA";
-            case 4 -> "GIRANDO_DERECHA";
-            default -> "QUIETO";
-        });
-        carro.cambiarDireccion(switch (codigo) {
-            case 2 -> "ATRAS";
-            case 3 -> "IZQUIERDA";
-            case 4 -> "DERECHA";
-            default -> "ADELANTE";
-        });
-        if (codigo == 0) { carro.setVelocidad(0); pwm = 0; }
+    @Override
+    public void onDesconectado() {
+        ultimaTelemetriaMs = 0;
+        bocinaService.sincronizar(0);
+        motorService.detenerMotores();
+        carro.cambiarEstado("QUIETO");
+        carro.setVelocidad(0f);
+        carro.getMicrocontrolador().actualizarEstado("QUIETO", 0f, carro.getModoOperacion());
+        registrarEvento("EV:ENLACE_BLE_PERDIDO");
     }
 
-    public int consultarBateria() { return carro.getBateria().obtenerNivel(); }
+    @Override
+    public void onMensaje(String mensaje) {
+        if (mensaje == null || mensaje.isBlank()) {
+            return;
+        }
+        if (mensaje.startsWith("OK:") || mensaje.startsWith("EV:") || mensaje.startsWith("ERR:")) {
+            registrarEvento(mensaje);
+            return;
+        }
+        try {
+            procesarDatos(parsear(mensaje));
+            ultimaTelemetriaMs = System.currentTimeMillis();
+        } catch (RuntimeException e) {
+            log.warn("Paquete descartado '{}': {}", mensaje, e.getMessage());
+        }
+    }
 
-    public synchronized EstadoCarro consultarEstadoCompleto() {
-        return new EstadoCarro(transporte.estaConectado(), ultimaTelemetria > 0
-                && System.currentTimeMillis() - ultimaTelemetria < 3000,
-                carro.getModoOperacion(), carro.getEstado(), carro.getDireccion(), carro.getVelocidad(),
-                pwm, sensores.consultarDistancia(), sensores.hayObstaculo(), sensores.consultarNivelLuz(),
-                sensores.hayOscuridad(), consultarBateria(), carro.getBateria().getVoltaje(), bateria.esBaja(),
-                leds.lucesEncendidas(), leds.getModoLuces(), bocina.estaSonando(), bocina.getPatron(),
-                ultimoEvento, List.copyOf(eventos));
+    // Paquetes: D:<cm>,L:<luz%>,B:<bat%>  |  M:<A|M>,F:<0|1>,H:<0-3>,X:<0-4>  |  P:<pwm%>,S:<cm/s>,U:<voltios>
+    private void procesarDatos(Map<String, String> kv) {
+        if (kv.containsKey("D")) {
+            sensorService.actualizarLecturas(Float.parseFloat(kv.get("D")), Float.parseFloat(kv.get("L")));
+            // Se ignora la bateria de firmware antiguo.
+        } else if (kv.containsKey("M")) {
+            String modo = "A".equals(kv.get("M")) ? "AUTO" : "MANUAL";
+            carro.setModoOperacion(modo);
+            ledsService.sincronizarLuces("1".equals(kv.get("F")));
+            bocinaService.sincronizar(Integer.parseInt(kv.get("H")));
+            aplicarMovimiento(Integer.parseInt(kv.get("X")));
+        } else if (kv.containsKey("P")) {
+            // Paquete antiguo de potencia, velocidad y voltaje: ignorado.
+        } else {
+            throw new IllegalArgumentException("paquete desconocido");
+        }
+    }
+
+    private void aplicarMovimiento(int x) {
+        motorService.aplicarMovimiento(x);
+        switch (x) {
+            case 1 -> { carro.cambiarEstado("AVANZANDO"); carro.cambiarDireccion("ADELANTE"); }
+            case 2 -> { carro.cambiarEstado("RETROCEDIENDO"); carro.cambiarDireccion("ATRAS"); }
+            case 3 -> { carro.cambiarEstado("GIRANDO_IZQUIERDA"); carro.cambiarDireccion("IZQUIERDA"); }
+            case 4 -> { carro.cambiarEstado("GIRANDO_DERECHA"); carro.cambiarDireccion("DERECHA"); }
+            default -> carro.cambiarEstado("QUIETO");
+        }
+        carro.getMicrocontrolador().actualizarEstado(carro.getEstado(), carro.getVelocidad(), carro.getModoOperacion());
+    }
+
+    private static Map<String, String> parsear(String paquete) {
+        Map<String, String> kv = new HashMap<>();
+        for (String par : paquete.split(",")) {
+            int i = par.indexOf(':');
+            if (i > 0) {
+                kv.put(par.substring(0, i).trim(), par.substring(i + 1).trim());
+            }
+        }
+        return kv;
+    }
+
+    private void registrarEvento(String evento) {
+        ultimoEvento = evento;
+        synchronized (eventos) {
+            eventos.addLast(evento);
+            while (eventos.size() > MAX_EVENTOS) {
+                eventos.removeFirst();
+            }
+        }
+        log.info("ESP32: {}", evento);
+    }
+
+    // =====================================================================
+    //  CONSULTAS (EstadoController)
+    // =====================================================================
+
+    public int consultarBateria() {
+        return -1;
+    }
+
+    public EstadoCarro consultarEstadoCompleto() {
+        List<String> copia;
+        synchronized (eventos) {
+            copia = new ArrayList<>(eventos);
+        }
+        boolean vigente = System.currentTimeMillis() - ultimaTelemetriaMs < TELEMETRIA_VIGENTE_MS;
+        return new EstadoCarro(
+                transporte.estaConectado(),
+                vigente,
+                carro.getModoOperacion(),
+                carro.getEstado(),
+                carro.getDireccion(),
+                -1f,
+                0,
+                sensorService.consultarDistancia(),
+                sensorService.hayObstaculo(),
+                sensorService.consultarNivelLuz(),
+                sensorService.hayOscuridad(),
+                -1,
+                -1f,
+                false,
+                ledsService.lucesEncendidas(),
+                ledsService.getModoLuces(),
+                bocinaService.estaSonando(),
+                bocinaService.getPatron(),
+                ultimoEvento,
+                copia);
+    }
+
+    public String getComandoPendiente() {
+        return comandoPendiente;
     }
 }

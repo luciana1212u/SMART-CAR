@@ -17,6 +17,9 @@ public class SensorService {
 
     // Lo llama MicrocontroladorService con cada paquete D:<cm>,L:<luz%> de la ESP32
     public void actualizarLecturas(float distanciaCm, float luzPct) {
+        if (!Float.isFinite(distanciaCm) || !Float.isFinite(luzPct)) {
+            throw new IllegalArgumentException("Lecturas de sensores no finitas");
+        }
         sensorAproximidad.setDistancia(distanciaCm);
         sensorLuz.setIntensidad(luzPct);
     }

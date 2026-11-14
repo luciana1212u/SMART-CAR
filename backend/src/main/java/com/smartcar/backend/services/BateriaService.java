@@ -15,8 +15,25 @@ public class BateriaService {
         this.nivelMinimo = nivelMinimo;
     }
 
+    // Lo llama MicrocontroladorService con los paquetes B:<%> y U:<voltios>
+    public void actualizarNivel(int nivel) {
+        bateria.actualizarNivel(nivel);
+    }
+
+    public void actualizarVoltaje(float voltaje) {
+        bateria.setVoltaje(voltaje);
+    }
+
+    public int consultarNivel() {
+        return bateria.obtenerNivel();
+    }
+
+    public float consultarVoltaje() {
+        return bateria.getVoltaje();
+    }
+    
     public boolean esBaja() {
-        return bateria.obtenerNivel() >= 0 && bateria.obtenerNivel() < nivelMinimo;
+        return bateria.obtenerNivel() < nivelMinimo;
     }
 
     public int getNivelMinimo() {
