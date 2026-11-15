@@ -1,9 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StatusBar, View } from 'react-native';
+import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
+import { C } from './src/theme';
 import { ApiError, crearApi } from './src/api';
 import { borrarSesion, cargarSesion } from './src/sesion';
 import LoginScreen from './src/screens/LoginScreen';
 import ControlScreen from './src/screens/ControlScreen';
+
+// En web: fuente Inter (la del diseno) y fondo oscuro tambien detras de la app
+if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('fuente-inter')) {
+  const link = document.createElement('link');
+  link.id = 'fuente-inter';
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap';
+  document.head.appendChild(link);
+  document.body.style.backgroundColor = C.bg;
+}
 
 // Dos pantallas, sin librerias de navegacion: si hay sesion -> control; si no -> login.
 // Al abrir la app se restaura la sesion guardada (tokens de Supabase) si sigue siendo valida.
@@ -42,15 +53,15 @@ export default function App() {
 
   if (restaurando) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
+        <ActivityIndicator size="large" color={C.blue} />
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar barStyle="default" />
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
       {sesion
         ? <ControlScreen baseUrl={sesion.url} usuario={sesion.usuario} onSalir={salir} />
         : <LoginScreen mensajeInicial={mensaje} onSesionIniciada={(url, usuario) => { setMensaje(null); setSesion({ url, usuario }); }} />}

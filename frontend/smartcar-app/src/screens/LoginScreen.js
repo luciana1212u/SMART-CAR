@@ -1,14 +1,20 @@
+// Inicio de sesion / registro con el estilo del diseno "RC control".
+// Pantalla ancha: carro a la izquierda y formulario a la derecha. Celular: carro arriba y formulario abajo.
+// La logica (validaciones, Supabase via backend, URL guardada) es la misma de antes.
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar,
-  StyleSheet, Text, TextInput, View } from 'react-native';
+  StyleSheet, View, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, crearApi, normalizarUrl } from '../api';
-import { useTema } from '../theme';
+import { C } from '../theme';
+import CarView from '../components/CarView';
+import { Campo, Card, CardTitle, Primario, Punto, T } from '../components/ui';
 
 const CLAVE_URL = 'smartcar.servidor';
 
 export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
-  const t = useTema();
+  const { width } = useWindowDimensions();
+  const amplio = width >= 900;
   const [servidor, setServidor] = useState(() =>
     Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.hostname : '');
   const [modoRegistro, setModoRegistro] = useState(false);
@@ -60,81 +66,117 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
     }
   }
 
-  const campo = [s.campo, { backgroundColor: t.panel, borderColor: t.linea, color: t.texto }];
+  const hero = (
+    <View style={[s.hero, amplio ? { flex: 1 } : s.heroMovil]}>
+      <View style={s.brand}>
+        <T style={s.brandB}>SMART·CAR</T>
+        <T style={s.brandS}>Control remoto</T>
+      </View>
+      {amplio && (
+        <>
+          <T style={s.titulo}>Conduce tu carro{'\n'}desde cualquier pantalla.</T>
+          <T style={s.sub}>Control en tiempo real por Bluetooth, sensores de proximidad, luces automáticas y bocina.</T>
+        </>
+      )}
+      <View style={[s.carro, !amplio && { height: 190 }]}>
+        <CarView luces style={{ width: '100%', height: '100%' }} />
+      </View>
+      {amplio && (
+        <View style={s.rasgos}>
+          {[[C.g, 'Zonas de distancia'], [C.blue, 'Modo automático'], [C.y, 'Bocina y luces']].map(([c, t]) => (
+            <View key={t} style={s.rasgo}><Punto color={c} /><T style={s.rasgoTxt}>{t}</T></View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
+  const formulario = (
+    <Card style={[s.form, amplio && { width: 440 }]}>
+      <CardTitle>{modoRegistro ? 'Nueva cuenta' : 'Iniciar sesión'}</CardTitle>
+      <T style={s.formTitulo}>{modoRegistro ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</T>
+      <T style={s.formSub}>{modoRegistro ? 'Solo toma un momento.' : 'Entra para controlar el carro.'}</T>
+
+      <Campo etiqueta="Servidor" ayuda="IP del PC o URL del backend" value={servidor} onChangeText={setServidor}
+        placeholder="192.168.1.20" editable={!cargando} autoCapitalize="none" autoCorrect={false} keyboardType="url" />
+
+      {modoRegistro && (
+        <View style={amplio ? s.dosCampos : undefined}>
+          <Campo style={amplio && { flex: 1 }} etiqueta="Nombre" value={nombre} onChangeText={setNombre}
+            placeholder="Tu nombre" editable={!cargando} />
+          <Campo style={amplio && { flex: 1 }} etiqueta="Usuario" value={usuario} onChangeText={setUsuario}
+            placeholder="minúsculas, números o _" autoCapitalize="none" autoCorrect={false}
+            maxLength={20} editable={!cargando} />
+        </View>
+      )}
+
+      <Campo etiqueta="Correo electrónico" value={email} onChangeText={setEmail} placeholder="tu@correo.com"
+        autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!cargando} />
+      <Campo etiqueta="Contraseña" ayuda={modoRegistro ? 'Mínimo 8 caracteres' : null} value={password}
+        onChangeText={setPassword} secureTextEntry autoCapitalize="none" editable={!cargando}
+        placeholder="••••••••" onSubmitEditing={enviar} />
+
+      {mensaje && (
+        <View style={[s.mensaje, { borderColor: mensaje.error ? 'rgba(255,69,58,0.35)' : 'rgba(48,209,88,0.35)',
+          backgroundColor: mensaje.error ? 'rgba(255,69,58,0.10)' : 'rgba(48,209,88,0.10)' }]}>
+          <T style={{ color: mensaje.error ? C.r : C.g, fontSize: 14 }}>{mensaje.texto}</T>
+        </View>
+      )}
+
+      <Primario texto={modoRegistro ? 'Crear cuenta' : 'Entrar'} onPress={enviar} cargando={cargando}>
+        {cargando ? <ActivityIndicator color="#fff" /> : null}
+      </Primario>
+
+      <Pressable disabled={cargando} onPress={() => { setModoRegistro(!modoRegistro); setMensaje(null); }}
+        style={s.enlace} accessibilityRole="button">
+        {({ hovered }) => (
+          <T style={[s.enlaceTxt, hovered && { color: C.tx }]}>
+            {modoRegistro ? '¿Ya tienes cuenta? ' : '¿No tienes cuenta? '}
+            <T style={{ color: C.blueSoft, fontWeight: '600' }}>{modoRegistro ? 'Inicia sesión' : 'Crear una'}</T>
+          </T>
+        )}
+      </Pressable>
+    </Card>
+  );
 
   return (
-    <KeyboardAvoidingView style={[s.raiz, { backgroundColor: t.fondo }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={s.contenido} keyboardShouldPersistTaps="handled">
-        <Text style={[s.titulo, { color: t.texto }]}>SmartCar</Text>
-        <Text style={[s.sub, { color: t.suave }]}>
-          {modoRegistro ? 'Crea tu cuenta' : 'Inicia sesion para controlar el carro'}
-        </Text>
-
-        <Text style={[s.etiqueta, { color: t.suave }]}>Servidor (IP del PC o URL del backend)</Text>
-        <TextInput style={campo} value={servidor} onChangeText={setServidor} placeholder="192.168.1.20"
-          accessibilityLabel="Servidor" editable={!cargando}
-          placeholderTextColor={t.suave} autoCapitalize="none" autoCorrect={false} keyboardType="url" />
-
-        {modoRegistro && (
-          <>
-            <Text style={[s.etiqueta, { color: t.suave }]}>Nombre</Text>
-            <TextInput style={campo} value={nombre} onChangeText={setNombre} placeholder="Tu nombre"
-              accessibilityLabel="Nombre" editable={!cargando}
-              placeholderTextColor={t.suave} />
-          </>
-        )}
-
-        {modoRegistro && (
-          <>
-            <Text style={[s.etiqueta, { color: t.suave }]}>Usuario (unico: minusculas, numeros o _)</Text>
-            <TextInput style={campo} value={usuario} onChangeText={setUsuario} autoCapitalize="none"
-              accessibilityLabel="Usuario" editable={!cargando} maxLength={20}
-              autoCorrect={false} placeholderTextColor={t.suave} />
-          </>
-        )}
-
-        <Text style={[s.etiqueta, { color: t.suave }]}>Correo electronico</Text>
-        <TextInput style={campo} value={email} onChangeText={setEmail} autoCapitalize="none"
-          accessibilityLabel="Correo" editable={!cargando} keyboardType="email-address"
-          autoCorrect={false} placeholderTextColor={t.suave} />
-
-        <Text style={[s.etiqueta, { color: t.suave }]}>
-          {modoRegistro ? 'Contrasena (minimo 8 caracteres)' : 'Contrasena'}
-        </Text>
-        <TextInput style={campo} value={password} onChangeText={setPassword} secureTextEntry
-          accessibilityLabel="Contrasena" editable={!cargando}
-          autoCapitalize="none" placeholderTextColor={t.suave} onSubmitEditing={enviar} />
-
-        {mensaje && (
-          <Text style={[s.mensaje, { color: mensaje.error ? t.alerta : t.ok }]}>{mensaje.texto}</Text>
-        )}
-
-        <Pressable style={[s.boton, { backgroundColor: t.acento, opacity: cargando ? 0.6 : 1 }]}
-          onPress={enviar} disabled={cargando}>
-          {cargando
-            ? <ActivityIndicator color={t.sobreAcento} />
-            : <Text style={[s.botonTxt, { color: t.sobreAcento }]}>{modoRegistro ? 'Crear cuenta' : 'Entrar'}</Text>}
-        </Pressable>
-
-        <Pressable disabled={cargando} onPress={() => { setModoRegistro(!modoRegistro); setMensaje(null); }} style={s.enlace}>
-          <Text style={{ color: t.acento, fontWeight: '600' }}>
-            {modoRegistro ? 'Ya tengo cuenta' : 'Crear una cuenta'}
-          </Text>
-        </Pressable>
+    <KeyboardAvoidingView style={s.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <ScrollView contentContainerStyle={[s.contenido, amplio && s.contenidoAmplio]} keyboardShouldPersistTaps="handled">
+        <View style={[s.halo, { pointerEvents: 'none' }]} />
+        {hero}
+        {formulario}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  raiz: { flex: 1, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : Platform.OS === 'ios' ? 50 : 0 },
-  contenido: { padding: 24, paddingBottom: 48, flexGrow: 1, justifyContent: 'center', maxWidth: 480, width: '100%', alignSelf: 'center' },
-  titulo: { fontSize: 32, fontWeight: '800', marginTop: 24 },
-  sub: { fontSize: 16, marginBottom: 20 },
-  etiqueta: { fontSize: 13, marginTop: 14, marginBottom: 6 },
-  campo: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  mensaje: { marginTop: 14, fontSize: 14 },
-  boton: { marginTop: 22, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  botonTxt: { fontSize: 16, fontWeight: '700' },
-  enlace: { alignItems: 'center', padding: 16 },
+  raiz: { flex: 1, backgroundColor: C.bg, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : Platform.OS === 'ios' ? 50 : 0 },
+  contenido: { flexGrow: 1, padding: 16, paddingBottom: 40, maxWidth: 520, width: '100%', alignSelf: 'center' },
+  contenidoAmplio: { maxWidth: 1180, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 56, padding: 40 },
+  halo: { position: 'absolute', top: -200, left: '10%', width: 900, height: 520, borderRadius: 600,
+    ...(Platform.OS === 'web'
+      ? { backgroundImage: 'radial-gradient(closest-side, rgba(62,106,225,0.16), transparent)' }
+      : { backgroundColor: 'rgba(62,106,225,0.06)' }) },
+
+  hero: { maxWidth: 560 },
+  heroMovil: { alignItems: 'center', paddingTop: 12, width: '100%' },
+  brand: { flexDirection: 'row', alignItems: 'baseline', gap: 14 },
+  brandB: { fontWeight: '600', fontSize: 15, letterSpacing: 5 },
+  brandS: { fontSize: 13, color: C.mut },
+  titulo: { fontSize: 40, lineHeight: 48, fontWeight: '300', letterSpacing: -0.8, marginTop: 36 },
+  sub: { fontSize: 15, lineHeight: 23, color: C.mut, marginTop: 14, maxWidth: 440 },
+  carro: { height: 340, width: '100%', marginTop: 24 },
+  rasgos: { flexDirection: 'row', flexWrap: 'wrap', gap: 22, marginTop: 8 },
+  rasgo: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  rasgoTxt: { fontSize: 13, color: C.mut },
+
+  form: { padding: 28, marginTop: 8 },
+  formTitulo: { fontSize: 26, fontWeight: '500', marginTop: 14, letterSpacing: -0.3 },
+  formSub: { fontSize: 14, color: C.mut, marginTop: 4, marginBottom: 6 },
+  dosCampos: { flexDirection: 'row', gap: 12 },
+  mensaje: { marginTop: 18, padding: 12, borderRadius: 12, borderWidth: 1 },
+  enlace: { alignItems: 'center', paddingTop: 18, paddingBottom: 2 },
+  enlaceTxt: { fontSize: 14, color: C.mut },
 });

@@ -7,8 +7,14 @@ SMART-CAR/
   backend/                  Spring Boot y API HTTP
   frontend/
     smartcar-app/           Aplicacion completa para web, Android e iOS
-    smartcar-mobile/        Copia de fuentes adicionales; sin package.json propio
+      src/screens/          LoginScreen y ControlScreen
+      src/components/       CarView (carro SVG), DPad (control circular), ui (botones, tarjetas)
+      src/theme.js          Paleta oscura del diseno
 ```
+
+El diseno se adapta solo: en pantallas anchas (>= 1000 px) usa dos columnas; en el
+celular, una sola. Dibujos con `react-native-svg`, asi que se ve igual en web, Android e iOS.
+En web: teclas W A S D o flechas para mover, Espacio detiene, H bocina, L luces.
 
 Para ejecutar la aplicacion, desde la raiz `SMART-CAR`:
 
