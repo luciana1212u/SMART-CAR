@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, crearApi, normalizarUrl } from '../api';
 import { C } from '../theme';
 import CarView from '../components/CarView';
+import { CarroAdaptable } from '../components/CarLateral';
 import { Campo, Card, CardTitle, Primario, Punto, T } from '../components/ui';
 
 const CLAVE_URL = 'smartcar.servidor';
@@ -78,9 +79,16 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
           <T style={s.sub}>Control en tiempo real por Bluetooth, sensores de proximidad, luces automáticas y bocina.</T>
         </>
       )}
-      <View style={[s.carro, !amplio && { height: 190 }]}>
-        <CarView luces style={{ width: '100%', height: '100%' }} />
-      </View>
+      {amplio ? (
+        <View style={s.carro}>
+          <CarView luces style={{ width: '100%', height: '100%' }} />
+        </View>
+      ) : (
+        // Celular: carro de perfil, grande, montado sobre el borde de la tarjeta
+        <View style={s.carroMovil}>
+          <CarroAdaptable vista="lateral" luces ancho={Math.min(width - 24, 460)} />
+        </View>
+      )}
       {amplio && (
         <View style={s.rasgos}>
           {[[C.g, 'Zonas de distancia'], [C.blue, 'Modo automático'], [C.y, 'Bocina y luces']].map(([c, t]) => (
@@ -92,7 +100,7 @@ export default function LoginScreen({ onSesionIniciada, mensajeInicial }) {
   );
 
   const formulario = (
-    <Card style={[s.form, amplio && { width: 440 }]}>
+    <Card style={[s.form, amplio ? { width: 440 } : { marginTop: -46, paddingTop: 52 }]}>
       <CardTitle>{modoRegistro ? 'Nueva cuenta' : 'Iniciar sesión'}</CardTitle>
       <T style={s.formTitulo}>{modoRegistro ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</T>
       <T style={s.formSub}>{modoRegistro ? 'Solo toma un momento.' : 'Entra para controlar el carro.'}</T>
@@ -161,13 +169,14 @@ const s = StyleSheet.create({
       : { backgroundColor: 'rgba(62,106,225,0.06)' }) },
 
   hero: { maxWidth: 560 },
-  heroMovil: { alignItems: 'center', paddingTop: 12, width: '100%' },
+  heroMovil: { alignItems: 'center', paddingTop: 12, width: '100%', zIndex: 2, elevation: 2 },
   brand: { flexDirection: 'row', alignItems: 'baseline', gap: 14 },
   brandB: { fontWeight: '600', fontSize: 15, letterSpacing: 5 },
   brandS: { fontSize: 13, color: C.mut },
   titulo: { fontSize: 40, lineHeight: 48, fontWeight: '300', letterSpacing: -0.8, marginTop: 36 },
   sub: { fontSize: 15, lineHeight: 23, color: C.mut, marginTop: 14, maxWidth: 440 },
   carro: { height: 340, width: '100%', marginTop: 24 },
+  carroMovil: { marginTop: 18, zIndex: 2, elevation: 2 },
   rasgos: { flexDirection: 'row', flexWrap: 'wrap', gap: 22, marginTop: 8 },
   rasgo: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   rasgoTxt: { fontSize: 13, color: C.mut },

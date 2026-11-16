@@ -6,7 +6,8 @@ import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, View, useWindow
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { ApiError, crearApi } from '../api';
 import { C } from '../theme';
-import CarView, { cajaCarro } from '../components/CarView';
+import { cajaCarro } from '../components/CarView';
+import { CarroAdaptable } from '../components/CarLateral';
 import DPad from '../components/DPad';
 import { Card, CardTitle, Ghost, IconoBateria, Pill, Punto, T, useMantener } from '../components/ui';
 
@@ -29,6 +30,8 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
   const { width, height } = useWindowDimensions();
   const amplio = width >= 1000;
   const compacto = width < 420;
+  // Celular o tablet en horizontal: control y carro lado a lado
+  const apaisado = !amplio && width > height && width >= 640;
   const api = useMemo(() => crearApi(baseUrl), [baseUrl]);
   const [estado, setEstado] = useState(null);
   const [latencia, setLatencia] = useState(null);
@@ -178,7 +181,7 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
 
   // ---- Bloques ----
   const cabecera = (
-    <View style={[s.top, compacto && { paddingHorizontal: 16 }]}>
+    <View style={[s.top, compacto && { paddingHorizontal: 16 }, apaisado && { paddingTop: 10, paddingBottom: 8, paddingHorizontal: 16 }]}>
       <View style={s.brand}>
         <T style={s.brandB}>SMART·CAR</T>
         <T style={s.brandS}>Hola, {usuario?.nombre || usuario?.usuario}</T>
@@ -201,11 +204,14 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
   const conAtras = SENSOR_TRASERO;
   const [, , vbW, vbH] = cajaCarro(true, conAtras);
   const pad = compacto ? 12 : 16;                       // margen lateral en el celular
-  const tamDpad = amplio ? 300 : Math.min(250, width - 2 * pad - 40);
+  const altoCabecera = apaisado ? 58 : 0;
+  const altoCajas = height - altoCabecera - 14;         // apaisado: las dos cajas llenan la pantalla
+  const tamDpad = apaisado ? Math.max(170, Math.min(250, altoCajas - 104))
+    : amplio ? 300 : Math.min(250, width - 2 * pad - 40);
 
-  // Carro visto desde arriba, con las zonas de proximidad
-  const carro = (ancho) => (
-    <CarView style={{ width: ancho, height: ancho * vbH / vbW, alignSelf: 'center' }}
+  // vista: 'lateral' (perfil, celular vertical) o 'superior' (desde arriba)
+  const carro = (lateral, ancho) => (
+    <CarroAdaptable vista={lateral ? 'lateral' : 'superior'} ancho={ancho}
       luces={lucesEn} reversa={reversa} bocina={!!estado?.bocinaSonando}
       nivelFrente={zonaF} nivelAtras={conAtras ? 0 : null} />
   );
@@ -222,6 +228,7 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
     <View style={s.fila}>
       <CardTitle>Control</CardTitle>
       <View style={[s.fila, { gap: 10 }]}>
+        {!amplio && estado?.hayObstaculo && <T style={s.obstaculo}>Obstáculo</T>}
         <View style={[s.modo, auto && { backgroundColor: 'rgba(62,106,225,0.18)', borderColor: C.blue }]}>
           <T style={[s.modoTxt, auto && { color: C.blueSoft }]}>{auto ? 'AUTOMÁTICO' : 'MANUAL'}</T>
         </View>
@@ -322,28 +329,56 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
               {estado?.hayObstaculo && <T style={s.obstaculo}>Obstáculo</T>}
             </View>
             {lectura(false)}
-            <View style={{ marginVertical: 8 }}>{carro(anchoCarro)}</View>
+            <View style={{ marginVertical: 8 }}>{carro(false, anchoCarro)}</View>
             {leyenda(false)}
           </Card>
           {eventos}
         </View>
       </View>
     );
+  } else if (apaisado) {
+    // Celular horizontal: las dos cajas llenan la pantalla; el carro va de pie
+    const altoCarro = altoCajas - 32 - 30 - 26;
+    cuerpo = (
+      <View style={[s.mainMovil, { paddingTop: 0 }]}>
+        <View style={[s.filaApaisada, { height: altoCajas, alignItems: 'stretch' }]}>
+          <Card style={[s.ctrl, { padding: 16, width: tamDpad + 72 }]}>
+            {tituloControl}
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{dpad}</View>
+            <View style={[s.fila, { marginTop: 2 }]}>
+              <T style={[s.rowLab, { fontSize: 12 }]}>Potencia</T>
+              <T style={[s.rowLab, { fontSize: 12, color: C.tx }]}>{nivel}/5 · {Math.round(NIVELES[nivel - 1] * 100 / 255)}%</T>
+            </View>
+            {segmentos}
+          </Card>
+          <Card style={[s.stage, { flex: 1, padding: 16 }]}>
+            <View style={s.fila}>
+              <CardTitle>Proximidad</CardTitle>
+              {lectura(true)}
+            </View>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{carro(false, altoCarro * vbW / vbH)}</View>
+            {leyenda(true)}
+          </Card>
+        </View>
+        <View style={s.filaApaisada}>
+          <View style={{ flex: 1 }}>{info}</View>
+          {eventos ? <View style={{ flex: 1 }}>{eventos}</View> : null}
+        </View>
+      </View>
+    );
   } else {
-    // Celular / pantalla angosta: una sola columna
-    const anchoCarro = Math.min(width - 2 * pad - 40, 300);
+    // Celular vertical: el carro va acostado ENCIMA del control, para ver ambos a la vez
+    const anchoInterno = width - 2 * pad - 40;
     cuerpo = (
       <View style={[s.mainMovil, { paddingHorizontal: pad }]}>
-        <Card style={[s.stage, { padding: 20 }]}>
-          <View style={s.fila}>
-            <CardTitle>Sensores de proximidad</CardTitle>
-            {estado?.hayObstaculo && <T style={s.obstaculo}>Obstáculo</T>}
-          </View>
-          {lectura(false)}
-          <View style={{ marginVertical: 8 }}>{carro(anchoCarro)}</View>
+        <Card style={[s.ctrl, { padding: 20 }]}>
+          {tituloControl}
+          <View style={{ marginTop: 8 }}>{lectura(true)}</View>
+          <View style={{ marginTop: 4 }}>{carro(true, anchoInterno)}</View>
           {leyenda(true)}
+          <View style={[s.dpad, { marginTop: 14 }]}>{dpad}</View>
+          {filasControl}
         </Card>
-        <Card style={[s.ctrl, { padding: 20 }]}>{tituloControl}<View style={s.dpad}>{dpad}</View>{filasControl}</Card>
         {info}
         {eventos}
       </View>
@@ -355,7 +390,7 @@ export default function ControlScreen({ baseUrl, usuario, onSalir }) {
       <StatusBar barStyle="light-content" backgroundColor={C.bg} />
       <ScrollView contentContainerStyle={s.contenido}>
         <View style={[s.halo, { pointerEvents: 'none' }]} />
-        {cabecera}
+        <View style={apaisado && s.topApaisado}>{cabecera}</View>
         {avisos.length > 0 && (
           <View style={[s.avisos, !amplio && { marginHorizontal: pad }]}>
             {avisos.map((a) => <T key={a} style={s.avisoTxt}>{a}</T>)}
@@ -466,6 +501,8 @@ const s = StyleSheet.create({
   main: { flexDirection: 'row', gap: 20, paddingHorizontal: 32, paddingTop: 8, alignItems: 'flex-start' },
   mainMovil: { gap: 16, paddingHorizontal: 16, paddingTop: 4 },
   col: { width: 400, gap: 20 },
+  topApaisado: {},
+  filaApaisada: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
 
   fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   ctrl: { padding: 28 },
